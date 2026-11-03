@@ -1,0 +1,113 @@
+        <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Recording Tester</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #1a73e8; margin-bottom: 24px; text-align: center; }
+        .section { margin-bottom: 40px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        .section h2 { color: #555; border-left: 4px solid #1a73e8; padding-left: 12px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .card { background: #fff; border: 1px solid #e0e0e0; padding: 12px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; transition: all 0.2s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-color: #1a73e8; }
+        .card span { font-weight: 600; margin-bottom: 10px; font-size: 14px; text-align: center; height: 40px; display: flex; align-items: center; }
+        button { background: #1a73e8; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: 500; }
+        button:hover { background: #1557b0; }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; background: #e8f0fe; padding: 15px; border-radius: 10px; }
+        .controls select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; outline: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Educational App Audio Tester</h1>
+        
+        <div class="controls">
+            <label>Language: 
+                <select id="langSelect">
+                    <option value="fr">French</option>
+                    <option value="ar">Arabic</option>
+                </select>
+            </label>
+            <label>Voice: 
+                <select id="voiceSelect">
+                    <option value="girl">Girl (XTTS)</option>
+                    <option value="boy">Boy (XTTS)</option>
+                </select>
+            </label>
+        </div>
+
+        <div id="content"></div>
+    </div>
+
+    <script>
+        const categories = {
+            "Carré Bleu Variants": [
+                "o_est_le_carr_bleu", "o_est_le_carr_bleu_v2", "o_est_le_carr_bleu_v3"
+            ],
+            "Fixed Combinations": [
+                "o_est_le_rectangle_vert", "o_est_le_cercle_rouge", "o_est_le_triangle_jaune"
+            ],
+            "Marron & Violet Variants (Boy)": [
+                "marron_v1", "marron_v2", "marron_v3", "marron_v4", "marron_v5", "marron_v6", "marron_v7", "marron_v8", "marron_v9", "marron_v10",
+                "violet_v1", "violet_v2", "violet_v3", "violet_v4", "violet_v5", "violet_v6", "violet_v7", "violet_v8", "violet_v9", "violet_v10"
+            ],
+            "Recent Targeted Fixes (Boy)": [
+                "la_grand_m_re", "le_grand_p_re", "bleu", "gris", "poule", "chat"
+            ],
+            "Family": ["la_m_re", "le_p_re", "le_fr_re", "la_s_ur", "la_grand_m_re", "le_grand_p_re"],
+            "Colors": ["rouge", "bleu", "jaune", "noir", "blanc", "vert", "orange", "rose", "violet", "gris"],
+            "Animals & People": ["fille", "gar_on", "mouton", "vache", "poule", "chat", "chien", "poisson"],
+            "Alphabet Words": ["stylo", "livre", "cartable", "ma_tresse", "cole", "maman", "papa", "ami"],
+            "Accented Letters": ["e_accent", "i_chapeau", "c_cedille"],
+            "Alphabet": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"],
+            "Instructions": ["glisse_le_mot_vers_le_bon_personnage", "glisse_le_mot_vers_la_bonne_couleur", "glisse_le_mot_vers_la_bonne_forme", "mets_les_lettres_dans_le_bon_ordre_pour_former_le_", "r_ponds_aux_questions_suivantes", "qu_est_ce_qu_on_veut_apprendre_aujourd_hui"],
+            "Feedback": ["bravo", "excellent", "super", "tr_s_bien", "tu_es_formidable", "essaie_encore", "pas_tout_fait", "r_essaie"]
+        };
+
+        function render() {
+            const lang = document.getElementById('langSelect').value;
+            const voice = document.getElementById('voiceSelect').value;
+            const container = document.getElementById('content');
+            container.innerHTML = '';
+
+            for (const [name, items] of Object.entries(categories)) {
+                const section = document.createElement('div');
+                section.className = 'section';
+                section.innerHTML = `<h2>${name}</h2>`;
+                
+                const grid = document.createElement('div');
+                grid.className = 'grid';
+
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <span>${item}</span>
+                        <button onclick="play('${item}')">Play ▶</button>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                section.appendChild(grid);
+                container.appendChild(section);
+            }
+        }
+
+        function play(key) {
+            const lang = document.getElementById('langSelect').value;
+            const voice = document.getElementById('voiceSelect').value;
+            const path = `recordings/${lang}/${voice}/${key}.wav`;
+            const audio = new Audio(path);
+            audio.play().catch(e => alert("Audio not found: " + path));
+        }
+
+        document.getElementById('langSelect').onchange = render;
+        document.getElementById('voiceSelect').onchange = render;
+
+        render();
+    </script>
+</body>
+</html>

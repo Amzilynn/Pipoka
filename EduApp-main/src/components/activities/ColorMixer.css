@@ -1,0 +1,194 @@
+.color-mixer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1vh;
+  width: 100%;
+  height: 100%;
+  padding: 0.5vh;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.mixing-equation-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2vw;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(15px);
+  padding: 1.5vh 2.5vw;
+  border-radius: 30px;
+  box-shadow: 
+    0 10px 30px rgba(0,0,0,0.06),
+    inset 0 0 0 3px rgba(255,255,255,0.9);
+  border: none;
+  margin-top: 0;
+  max-width: 90%;
+  flex-shrink: 0;
+}
+
+.equation-symbol {
+  font-size: clamp(2rem, 5vh, 4rem);
+  font-weight: 900;
+  color: #666;
+  user-select: none;
+  text-shadow: 0 2px 4px rgba(255,255,255,1);
+}
+
+.splat-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8vh;
+  flex-shrink: 0;
+}
+
+.splat-label {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: clamp(0.9rem, 1.8vh, 1.4rem);
+  letter-spacing: 1.5px;
+  filter: drop-shadow(0 2px 0 rgba(255,255,255,0.5));
+}
+
+/* Splat SVG styling */
+.splat-svg {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1));
+  width: clamp(42px, 8vh, 80px);
+  height: clamp(42px, 8vh, 80px);
+}
+
+.splat-container:hover .splat-svg {
+  transform: scale(1.08) rotate(3deg);
+}
+
+.mixer-options-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8vh 1.5vw;
+  padding: 1.2vh 1.5vw;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 25px;
+  width: 90%;
+  max-width: 700px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+  margin-bottom: 0.5vh;
+  flex-shrink: 0;
+}
+
+.splat-option-card {
+  cursor: grab;
+  padding: 1vh;
+  background: white;
+  border-radius: 22px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 3px solid transparent;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.splat-option-card.light-color-card {
+  background: #f0f2f5;
+  border-color: #e1e4e8;
+}
+
+.splat-option-card:hover {
+  transform: translateY(-5px) scale(1.03);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+  border-color: rgba(255,255,255,0.8);
+}
+
+.splat-option-card:active {
+  cursor: grabbing;
+}
+
+.splat-option-card.dragging {
+  opacity: 0.4;
+  transform: scale(1.15);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.mixer-drop-zone {
+  width: clamp(70px, 12vh, 120px);
+  height: clamp(70px, 12vh, 120px);
+  border: 3px dashed #ddd;
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.6);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: visible;
+}
+
+.mixer-drop-zone.over {
+  border-color: #4D96FF;
+  background: rgba(77, 150, 255, 0.15);
+  transform: scale(1.1);
+  box-shadow: 0 0 0 8px rgba(77, 150, 255, 0.1);
+}
+
+.mixer-drop-zone.filled {
+  border: 4px solid #6BCB77;
+  background: white;
+  box-shadow: 0 10px 30px rgba(107, 203, 119, 0.2);
+}
+
+.drop-hint-icon {
+  font-size: clamp(1.5rem, 4vh, 3rem);
+  opacity: 0.4;
+  font-weight: 800;
+  color: #aaa;
+}
+
+.success-check {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  background: linear-gradient(135deg, #6BCB77, #4CAF50);
+  color: white;
+  width: clamp(30px, 4vh, 45px);
+  height: clamp(30px, 4vh, 45px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1rem, 2vh, 1.5rem);
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 10;
+  border: 3px solid white;
+}
+
+.interaction-tip {
+  color: #777;
+  font-size: clamp(0.8rem, 1.6vh, 1.1rem);
+  font-weight: 600;
+  margin: 1vh 0;
+  background: rgba(255,255,255,0.4);
+  padding: 0.5vh 2vw;
+  border-radius: 20px;
+}
+
+/* Animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+.shake-it {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Mascot spacing adjustment */
+.activity-mascot-fixed {
+  z-index: 100;
+}
+

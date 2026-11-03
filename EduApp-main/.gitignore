@@ -1,0 +1,41 @@
+node_modules
+dist
+.DS_Store
+*.local
+.env
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.idea
+.vscode
+*.swp
+*.swo
+*.wav
+nul
+voice_ids.txt
+tmp_check_voices.py
+voices_output.txt
+test_carre_gris.wav
+test_pyttsx3.wav
+temp_audio.wav
+test.mp3
+.venv/
+xtts-backend/
+server/
+xtts-cache/
+tts-download/
+temp_audio.wav
+test.mp3
+refrence_voices/
+recordings/
+
+# Tooling artifacts
+__pycache__/
+*.pyc
+
+# Local working material (logs, installers, scratch outputs) — kept on disk, not tracked
+archive/
+final girl arabic/
+final girl backup/
+recordings_*/

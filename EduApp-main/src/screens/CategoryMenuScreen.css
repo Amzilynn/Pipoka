@@ -1,0 +1,493 @@
+/* Learning Phrase - Level Theme Color */
+.learning-phrase-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: linear-gradient(135deg, var(--level-primary) 0%, var(--level-primary-light) 100%);
+  border-radius: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 
+    0 8px 30px color-mix(in srgb, var(--level-primary) 40%, transparent),
+    0 0 0 3px rgba(255, 255, 255, 0.5),
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  width: 100%;
+  max-width: 650px;
+  margin: clamp(6px, 1.5vh, 18px) auto var(--space-2);
+  position: relative;
+  overflow: hidden;
+}
+
+.learning-phrase-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
+  pointer-events: none;
+  border-radius: 60px 60px 0 0;
+}
+
+.learning-phrase-text {
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(1.4rem, 4.5vw, 2.1rem);
+  font-weight: 900;
+  color: white;
+  text-align: center;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  z-index: 1;
+  letter-spacing: -0.5px;
+}
+
+.speaker-btn-learning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 0%, #f8f8f8 100%);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  box-shadow: 
+    0 4px 0 rgba(0, 0, 0, 0.1),
+    0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.speaker-btn-learning svg {
+  stroke: var(--level-primary-dark);
+}
+
+.speaker-btn-learning:hover {
+  transform: scale(1.1);
+  box-shadow: 
+    0 6px 0 rgba(0, 0, 0, 0.1),
+    0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.speaker-btn-learning:active {
+  transform: translateY(3px) scale(0.95);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* V2 Whiteish Background */
+.category-screen-v2 {
+  background: linear-gradient(180deg, #F9FBE7 0%, #E8F5E9 30%, #E0F2F1 100%);
+}
+
+.category-menu-layout {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.5vh, 20px);
+}
+
+/* Mascot Welcome Zone */
+.mascot-welcome-strip {
+  height: clamp(80px, 15vh, 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: none;
+  border-radius: var(--radius-lg);
+  padding: 10px 20px;
+  border: 1.5px solid rgba(255,255,255,0.6);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.welcome-mascot {
+  width: clamp(60px, 12vh, 90px);
+  height: clamp(60px, 12vh, 90px);
+}
+
+.welcome-bubble h2 {
+  font-size: var(--text-md);
+  margin: 0;
+  color: var(--text-dark);
+}
+
+/* Category List Stretching */
+.category-list-stretch {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.5vh, 16px);
+  min-height: 0;
+}
+
+.category-card-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* Header Elements - Stylish Pill Home Button */
+.home-btn-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background: linear-gradient(180deg, #FF6B6B 0%, #EE5A5A 100%);
+  color: white;
+  border-radius: 50px;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  box-shadow: 
+    0 4px 0 #C94A4A,
+    0 6px 20px rgba(238, 90, 90, 0.4);
+  border: 3px solid rgba(255,255,255,0.5);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.home-btn-pill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+  border-radius: 50px 50px 0 0;
+  pointer-events: none;
+}
+
+.home-btn-pill:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 
+    0 6px 0 #C94A4A,
+    0 10px 30px rgba(238, 90, 90, 0.5);
+}
+
+.home-btn-pill:active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 
+    0 2px 0 #C94A4A,
+    0 4px 10px rgba(238, 90, 90, 0.3);
+}
+
+.home-label { display: none; }
+@media (min-width: 480px) { .home-label { display: inline; } }
+
+.level-badge-frosted {
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: none;
+  border: 1.5px solid rgba(255,255,255,0.9);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-xs);
+  color: var(--text-dark);
+}
+
+.badge-mascot-wrap {
+  width: 20px;
+  height: 20px;
+}
+
+.speaker-btn-frosted {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  border: 1.5px solid rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--anim-instant);
+}
+
+.speaker-btn-frosted:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+/* V3 — High-End 3D UI: Adventure Floor & Cinematic Lighting */
+.category-screen-v3-adventure {
+  background: linear-gradient(180deg, #F9FBE7 0%, #E8F5E9 30%, #E0F2F1 100%);
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100dvh;
+}
+
+.category-menu-layout-v3-adventure {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  padding: var(--space-4) var(--space-4);
+}
+
+/* V3 Clean Category Screen — MASTER LAYOUT PROTOCOL */
+.category-screen-v3 {
+  background: var(--level-bg) !important;
+  /* height/overflow managed by .screen parent */
+  position: relative;
+  overflow: hidden;
+}
+
+.category-screen-v3::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0%, transparent 40%),
+    radial-gradient(circle at 70% 80%, rgba(255,255,255,0.6) 0%, transparent 35%);
+  pointer-events: none;
+}
+
+/* CONTENT ZONE fills all available space */
+.category-menu-layout-v3 {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2px, 0.8vh, 10px) clamp(6px, 1.5vw, 14px);
+  gap: clamp(4px, 1vh, 12px);
+  position: relative;
+  z-index: 1;
+}
+
+/* Header bottom decoration - 20vh visual band */
+.category-screen-v3::after {
+  content: '';
+  position: absolute;
+  top: 70vh;
+  left: 0;
+  right: 0;
+  height: 20vh;
+  background: linear-gradient(180deg, var(--level-bg) 0%, color-mix(in srgb, var(--level-primary) 15%, white) 100%);
+  border-radius: 50% 50% 0 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Adventure Floor Background */
+.adventure-floor-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.adventure-path {
+  position: absolute;
+  bottom: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150%;
+  height: 60vh;
+  background: #C3E6C3;
+  border-radius: 50% 50% 0 0;
+  opacity: 0.6;
+}
+
+/* Premium Header UI — fits within 10vh app-header */
+.v3-header-clean {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 clamp(8px, 2vw, 24px);
+  position: relative;
+  z-index: 20;
+  height: 100%;  /* Fill the app-header container */
+}
+
+@media (max-width: 639px) {
+  .v3-header-clean {
+    padding: 0 clamp(6px, 2vw, 16px);
+  }
+}
+
+.home-btn-3d-premium {
+  justify-self: start;
+  background: linear-gradient(180deg, var(--level-primary) 0%, var(--level-primary-dark) 100%);
+  border: none;
+  border-radius: 50px;
+  padding: clamp(8px, 1.25vh, 14px) clamp(16px, 3vw, 24px);
+  box-shadow: 
+    0 4px 0 var(--level-primary-dark),
+    0 6px 20px color-mix(in srgb, var(--level-primary) 40%, transparent);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+  min-height: 36px;
+}
+
+.home-btn-3d-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%);
+  border-radius: 50px 50px 0 0;
+  pointer-events: none;
+}
+
+.home-btn-3d-premium:hover { 
+  transform: translateY(-4px) scale(1.05); 
+  box-shadow: 
+    0 8px 0 var(--level-primary-dark),
+    0 12px 30px color-mix(in srgb, var(--level-primary) 50%, transparent);
+}
+
+.home-btn-3d-premium:active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 
+    0 2px 0 var(--level-primary-dark),
+    0 4px 12px color-mix(in srgb, var(--level-primary) 30%, transparent);
+}
+
+.home-label-3d-bold { 
+  font-weight: 900; 
+  font-size: clamp(0.95rem, 3vh, 1.2rem);
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  position: relative;
+  z-index: 1;
+}
+
+/* MASCOT — MASTER LAYOUT PROTOCOL: floats over header, does NOT push content */
+.v3-mascot-focus {
+  /* Position mascot so it floats over the top area */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.mascot-waving-container {
+  /* Mascot size: matches header height (50vh) */
+  width: clamp(60px, 10vh, 100px);
+  height: clamp(60px, 10vh, 100px);
+}
+
+.v3-premium-mascot-anim {
+  width: 100%;
+  height: 100%;
+  filter: none;
+  animation: none;
+}
+
+@keyframes mascotFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.speaker-btn-3d-premium {
+  justify-self: end;
+  background: var(--color-primary);
+  border: none;
+  width: clamp(36px, 5vh, 48px);
+  height: clamp(36px, 5vh, 48px);
+  border-radius: 50%;
+  box-shadow: 
+    0 4px 0 var(--color-primary-hover),
+    var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--anim-fast);
+}
+
+.speaker-btn-3d-premium:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--color-primary-hover); }
+
+.v3-header-right {
+  justify-self: end;
+}
+
+/* Category Cards — AUTO-SHRINK FAIL-SAFE with clamp() */
+.category-cards-container-v3 {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  /* Gaps shrink first when space is tight */
+  gap: clamp(10px, 3vmin, 36px);
+  width: 100%;
+  max-width: 900px;
+  /* Padding shrinks next */
+  padding: clamp(2px, 0.8vh, 16px) clamp(6px, 1.5vw, 20px);
+  margin: 0 auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.category-cards-container-v3 > * {
+  /* Cards shrink to fit; max-width constrains them */
+  flex: 1 1 clamp(150px, 28vmin, 300px);
+  max-width: clamp(170px, 34vmin, 320px);
+}
+
+.v3-mascot-focus .mascot-shadow {
+  display: none !important;
+}
+
+/* Header Mascots Fixed - no floating animation */
+.v3-mascot-focus .mascot-body-group {
+  animation: none !important;
+}
+
+.v3-mascot-focus .tail {
+  animation: none !important;
+}
+
+.v3-mascot-focus .eye {
+  animation: none !important;
+}
+
+.v3-mascot-focus .wing-right {
+  animation: none !important;
+}
+
+.v3-mascot-focus .heartbeat {
+  animation: none !important;
+}
+
+.v3-mascot-focus .star-rotate {
+  animation: none !important;
+}

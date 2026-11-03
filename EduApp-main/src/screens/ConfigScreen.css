@@ -1,0 +1,132 @@
+/* ===== MASTER LAYOUT PROTOCOL: CONFIG (SETUP) SCREEN ===== */
+
+.config-screen-v2 {
+  background: linear-gradient(180deg, #F9FBE7 0%, #E8F5E9 30%, #E0F2F1 100%) !important;
+}
+
+/* Central visual column — fills the content zone, no scroll */
+.central-visual-path {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  /* Use full content zone height */
+  flex: 1;
+  min-height: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: space-evenly !important;
+  padding: clamp(4px, 1vh, 12px) clamp(8px, 2vw, 16px) !important;
+  overflow: hidden !important;
+  box-sizing: border-box;
+  gap: clamp(6px, 1.5vh, 20px);
+}
+
+/* Logo & Instruction */
+.brand-logo-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(4px, 1vh, 12px);
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.edukids-logo-colorful {
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(2.2rem, 7vh, 4.5rem);
+  font-weight: 900;
+  display: flex;
+  gap: var(--space-04);
+  filter: drop-shadow(0 12px 24px rgba(100, 149, 237, 0.4));
+  letter-spacing: -0.02em;
+}
+
+.logo-letter {
+  display: inline-block;
+}
+
+.c1 { color: var(--color-accent); }
+.c2 { color: #4D96FF; }
+.c3 { color: var(--color-primary); }
+.c4 { color: var(--color-success); }
+.c5 { color: var(--color-warning); }
+.c6 { color: var(--color-magic); }
+
+.instruction-badge {
+  background: white;
+  padding: clamp(4px, 1vh, 8px) var(--space-6);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.instruction-badge h3 {
+  font-size: clamp(0.9rem, 2.5vh, 1.2rem);
+  color: var(--color-text-dark);
+  font-weight: 800;
+  margin: 0;
+}
+
+.down-arrow-icon {
+  color: var(--color-warning);
+  font-size: 1.2rem;
+  animation: bounceSoft 2s infinite;
+}
+
+/* Age Selection Grid */
+.age-selection-band {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 1;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+}
+
+.age-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: center;
+  gap: clamp(12px, 4vw, 40px);
+  max-width: 1000px;
+  width: 100%;
+  padding: 0 clamp(8px, 2vw, 16px);
+  justify-items: center;
+}
+
+/* On very small screens, 1 column */
+@media (max-width: 639px) {
+  .age-pill-grid {
+    grid-template-columns: 1fr;
+    max-width: 280px;
+  }
+}
+
+/* CTA Row — pinned at bottom of content zone */
+.cta-container-8k {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: clamp(4px, 1vh, 12px) 0;
+  flex-shrink: 0;
+}
+
+.cta-container-8k .btn-content {
+  padding: clamp(10px, 2vh, 16px) clamp(40px, 8vw, 80px) !important;
+  font-size: clamp(1.2rem, 3vh, 2rem) !important;
+  border-width: 4px !important;
+}
+
+.cta-container-8k .btn-big:hover:not(:disabled) .btn-content {
+  transform: translateY(-4px);
+}
+
+@keyframes bounceSoft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+}

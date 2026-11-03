@@ -1,0 +1,483 @@
+/* ===== MASTER LAYOUT PROTOCOL: DRAG-TEXT-TO-IMAGE CONTAINER ===== */
+.drag-text-image-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  /* AUTO-SHRINK: gaps compress first */
+  gap: clamp(4px, 1vh, 16px);
+  padding: 4px;
+}
+
+.chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(8px, 1.5vw, 16px);
+  padding: 8px;
+}
+
+.label-chip-drag {
+  padding: clamp(8px, 1.5vh, 12px) clamp(16px, 2vw, 24px);
+  border-radius: var(--radius-md);
+  background: var(--c-sunshine);
+  border: 3px solid rgba(0,0,0,0.1);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(16px, 3vh, 24px);
+  color: var(--text-dark);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  will-change: transform; /* Promote to GPU layer for smooth drag */
+  min-width: clamp(80px, 15vw, 120px);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.label-chip-drag.placed {
+  background: #E0E0E0;
+  box-shadow: none;
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ===== MASTER LAYOUT PROTOCOL: 2×3 GAME SCREEN GRID ===== */
+.drop-zones-grid {
+  display: grid;
+  /* 2 columns × 3 rows = 6 cards */
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: clamp(6px, 1.5vmin, 16px);
+  width: 100%;
+  /* flex: 1 so it grows to fill space, min-height:0 so it can shrink */
+  flex: 1;
+  min-height: 0;
+  max-width: 700px;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.drop-zones-grid.fewer-items {
+  grid-template-rows: repeat(2, 1fr);
+  max-width: 800px;
+}
+
+/* Each card: MLP enforces max-height:25vh, aspect-ratio stays square */
+.image-drop-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 3px dashed #C5E1A5;
+  padding: clamp(4px, 0.8vh, 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 0.8vh, 10px);
+  max-height: 25vh;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  /* Use specific props only — 'transition: all' causes reflows during every drag frame */
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+  overflow: hidden;
+}
+
+.drop-zones-grid.fewer-items .image-drop-card {
+  max-height: 28vh;
+  padding: clamp(8px, 1.5vh, 16px);
+}
+
+.image-drop-card.over {
+  border-color: var(--c-grass);
+  background: rgba(107,203,119,0.05);
+  transform: scale(1.03);
+}
+
+/* Ensure white target stands out from white card */
+.image-drop-card.white-target {
+  background: #E2E8F0;
+  border-color: #CBD5E1;
+}
+
+.image-drop-card.correct {
+  border: 3px solid var(--c-grass);
+  background: rgba(107,203,119,0.1);
+}
+
+/* IMAGE ALIGNMENT — MLP: width/height:100%, object-fit:cover, border-radius */
+.illustration-box {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.illustration-box img,
+.illustration-box svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  display: block;
+}
+
+.v3-sticker-slot .illustration-box {
+  min-height: 0;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placed-label-tag {
+  background: var(--c-grass);
+  color: white;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.empty-slot-dash {
+  width: 60%;
+  height: 4px;
+  background: #E0E0E0;
+  border-radius: 2px;
+}
+/* V3 — 3 Year Olds High-End 3D Activity UI — MLP compliant */
+.v3-drag-activity-container {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(4px, 0.8vh, 12px);
+  padding: clamp(2px, 0.5vh, 8px);
+  overflow: visible; /* Allow dragged chips to escape container */
+}
+
+.v3-stickers-row {
+  display: flex;
+  flex-wrap: nowrap; /* Force single row */
+  justify-content: center;
+  align-items: center;
+  gap: clamp(4px, 0.8vw, 10px);
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  /* NOTE: NO overflow:hidden — dragged chips must be visible outside this row */
+}
+
+.v3-word-sticker {
+  padding: 6px 12px;
+  background: linear-gradient(180deg, var(--level-bg-card) 0%, var(--level-bg) 100%);
+  border-radius: 50px;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 900;
+  font-size: clamp(0.75rem, 1.6vw, 1rem);
+  color: var(--level-primary-dark);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  will-change: transform; /* GPU layer for smooth drag */
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow: 
+    0 4px 0 color-mix(in srgb, var(--level-primary) 50%, transparent),
+    0 6px 16px color-mix(in srgb, var(--level-primary) 20%, transparent);
+  border: 2px solid var(--level-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+/* Ensure text is always readable */
+body.level-5 .v3-word-sticker,
+body.level-4 .v3-word-sticker,
+body.level-3 .v3-word-sticker {
+  color: var(--level-primary-dark);
+}
+
+.v3-word-sticker:hover:not(.placed) {
+  transform: translateY(-6px) scale(1.05);
+  box-shadow: 
+    0 10px 0 color-mix(in srgb, var(--level-primary) 30%, transparent),
+    0 14px 30px color-mix(in srgb, var(--level-primary) 25%, transparent);
+}
+
+.v3-word-sticker.dragging {
+  cursor: grabbing;
+  transform: scale(1.1) rotate(4deg);
+  box-shadow: 0 20px 40px color-mix(in srgb, var(--level-primary) 30%, transparent);
+  z-index: 1000;
+}
+
+.v3-word-sticker.placed {
+  opacity: 0.15;
+  pointer-events: none;
+  transform: scale(0.9);
+  box-shadow: none;
+}
+
+/* STICKER GRID — MLP: 2×3 grid (2 columns × 3 rows = 6 character cards) */
+.v3-sticker-grid {
+  display: grid;
+  /* 3 columns for 6 items */
+  grid-template-columns: repeat(3, min-content);
+  grid-template-rows: repeat(2, min-content);
+  gap: clamp(12px, 2.5vmin, 28px);
+  width: 100%;
+  justify-content: center;
+  align-content: center; /* Center grid horizontally/vertically */
+  flex: 1;
+  min-height: 0;
+  padding: clamp(4px, 1vh, 16px);
+}
+
+.v3-sticker-slot {
+  width: 22vh;           /* MLP: strict square sizing */
+  height: 22vh;          /* MLP: strict square sizing */
+  max-width: 250px;
+  max-height: 250px;
+  min-width: 110px;
+  min-height: 110px;
+  background: var(--level-bg-card);
+  border-radius: 20px;
+  border: 4px solid var(--level-primary-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 
+    0 8px 24px color-mix(in srgb, var(--level-primary) 15%, transparent),
+    0 2px 6px rgba(0, 0, 0, 0.05);
+  padding: 0;           /* No padding to maximize image area */
+  overflow: hidden;
+}
+
+.v3-sticker-slot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, transparent 100%);
+  border-radius: 23px 23px 0 0;
+  pointer-events: none;
+}
+
+.v3-sticker-slot.over {
+  background: var(--level-bg-card);
+  border-color: var(--level-primary);
+  transform: scale(1.03) translateY(-4px);
+  box-shadow: 
+    0 16px 40px color-mix(in srgb, var(--level-primary) 30%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Ensure white target stands out from typical light card backgrounds */
+.v3-sticker-slot.white-target {
+  background: #E2E8F0;
+  border-color: #CBD5E1;
+}
+
+.v3-sticker-slot.correct {
+  border-style: solid;
+  border-color: var(--level-primary);
+  background: linear-gradient(180deg, var(--level-primary-light) 0%, var(--level-bg-card) 100%);
+  box-shadow: 
+    0 8px 30px color-mix(in srgb, var(--level-primary) 25%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Clay illustration — MLP image alignment: cover + border-radius */
+.v3-clay-illustration {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  border-radius: 12px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+  transition: transform 0.3s ease;
+  display: block;
+}
+
+/* ILLUSTRATION-BOX inside v3-sticker-slot: fill entire card */
+.v3-sticker-slot .illustration-box {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 12px;
+  z-index: 1;
+  pointer-events: none; /* CRITICAL: don't block drop zone hit detection */
+}
+
+/* Force FamilyIllustration and any img/div inside to fill the box */
+.v3-sticker-slot .illustration-box > div,
+.v3-sticker-slot .illustration-box img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important; /* FILL the card area */
+  object-position: center 20% !important; /* Prioritize the face area */
+  border-radius: 12px !important;
+}
+
+/* Also fix any nested img inside the wrapper div */
+.v3-sticker-slot .illustration-box > div img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 10px !important;
+}
+
+.v3-sticker-slot:hover .v3-clay-illustration {
+  transform: scale(1.03);
+}
+
+.v3-answer-space {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  /* pointer-events intentionally NOT set to none — allow drop zone to work */
+}
+
+.standard-answer-space {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.v3-placed-label {
+  background: white;
+  color: var(--level-primary-dark);
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 950;
+  font-size: clamp(0.9rem, 1.8vh, 1.1rem);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  border: 3px solid var(--level-primary);
+  text-shadow: none;
+  width: auto;
+  text-align: center;
+}
+
+.standard-answer-space {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slot-inner-shadow {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 10px 20px rgba(0,0,0,0.05);
+  border-radius: inherit;
+}
+
+/* Family Illustration - Full Card Fill */
+.v3-family-illustration-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+}
+
+.v3-family-illustration-wrap .v3-clay-illustration {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.1));
+}
+
+.v3-sticker-slot .v3-family-illustration-wrap {
+  min-height: 0;
+  flex: 1;
+}
+
+/* Speaker Button */
+.element-speaker-btn {
+  background: linear-gradient(180deg, var(--level-bg-card) 0%, var(--level-bg) 100%);
+  border: 3px solid var(--level-primary-light);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--level-primary) 30%, transparent);
+}
+
+.element-speaker-btn:hover {
+  transform: scale(1.1) translateY(-2px);
+  background: var(--level-bg-card);
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--level-primary) 35%, transparent);
+}
+
+@media (max-width: 639px) {
+  .v3-word-sticker {
+    font-size: var(--text-xl);
+    padding: var(--space-2) var(--space-4);
+  }
+  
+  .v3-sticker-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+    max-width: 400px;
+  }
+  
+  .v3-sticker-slot {
+    max-width: 170px;
+    aspect-ratio: 1 / 1.1;
+  }
+}
+
+@media (max-width: 420px) {
+  .v3-sticker-grid {
+    gap: var(--space-3);
+  }
+  
+  .v3-sticker-slot {
+    max-width: 150px;
+    border-radius: 22px;
+  }
+}

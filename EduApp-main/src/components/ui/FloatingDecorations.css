@@ -1,0 +1,56 @@
+.decorations-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.deco-shape {
+  position: absolute;
+  opacity: 0.8;
+  filter: none;
+  border-radius: 8px;
+  box-shadow: 
+    inset -4px -4px 12px rgba(0,0,0,0.1),
+    inset 4px 4px 12px rgba(255,255,255,0.5),
+    4px 8px 16px rgba(0,0,0,0.05);
+}
+
+.sphere-3d {
+  border-radius: 50% !important;
+}
+
+.torus-3d {
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: 12px solid currentColor;
+  box-shadow: none !important;
+  filter: drop-shadow(4px 4px 8px rgba(0,0,0,0.05));
+}
+
+.pyramid-3d {
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 40px solid #F8BBD0;
+  filter: none;
+  box-shadow: none !important;
+}
+
+.deco-sparkle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: white;
+  mask: radial-gradient(circle, #fff 10%, transparent 60%);
+  -webkit-mask: radial-gradient(circle, #fff 10%, transparent 60%);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  z-index: 1;
+}
+
+.cube-3d {
+  transform-style: preserve-3d;
+}

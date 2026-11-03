@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XTTS-v2 API Tester</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; background: #f0f2f5; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; margin-top: 0; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; margin-top: 20px; width: 100%; font-size: 16px; transition: background 0.3s; }
+        button:hover { background: #1557b0; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #status { margin-top: 20px; text-align: center; color: #666; font-style: italic; }
+        audio { width: 100%; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🎙️ XTTS-v2 Tester</h1>
+        
+        <label>Backend URL</label>
+        <input type="text" id="backendUrl" value="https://amzilynn-eduapp.hf.space" placeholder="https://your-space.hf.space">
+
+        <label>Language</label>
+        <select id="lang">
+            <option value="ar">Arabic (ar)</option>
+            <option value="fr">French (fr)</option>
+        </select>
+
+        <label>Voice Reference</label>
+        <select id="voice">
+            <option value="girl">Child Girl</option>
+            <option value="boy">Child Boy</option>
+        </select>
+
+        <label>Text to Synthesize</label>
+        <textarea id="text" rows="3">Bonjour les enfants ! Bienvenue dans EduKids.</textarea>
+
+        <button id="btn">Generate & Play Audio</button>
+        
+        <div id="status">Ready.</div>
+        <audio id="player" controls style="display:none"></audio>
+    </div>
+
+    <script>
+        const btn = document.getElementById('btn');
+        const status = document.getElementById('status');
+        const player = document.getElementById('player');
+
+        btn.onclick = async () => {
+            const url = document.getElementById('backendUrl').value.replace(/\/$/, "");
+            const text = document.getElementById('text').value;
+            const language = document.getElementById('lang').value;
+            const voice = document.getElementById('voice').value;
+
+            if (!text) return alert("Please enter some text!");
+
+            btn.disabled = true;
+            status.innerText = "⏳ Generating audio... (The first time might take 10-20 seconds)";
+            player.style.display = "none";
+
+            try {
+                const response = await fetch(`${url}/synthesize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, language, voice })
+                });
+
+                if (!response.ok) throw new Error(`Server error: ${await response.text()}`);
+
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                
+                player.src = audioUrl;
+                player.style.display = "block";
+                player.play();
+                status.innerText = "✅ Success! Playing audio...";
+            } catch (err) {
+                console.error(err);
+                status.innerText = "❌ Error: " + err.message;
+            } finally {
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

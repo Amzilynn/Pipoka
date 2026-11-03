@@ -1,0 +1,66 @@
+import os
+from pathlib import Path
+import subprocess
+import time
+
+def synthesize(model, text, output_path, speaker_wav, language="ar"):
+    print(f"Synthesizing: '{text}' -> {output_path}")
+    try:
+        model.tts_to_file(
+            text=text,
+            file_path=str(output_path),
+            speaker_wav=speaker_wav,
+            language=language
+        )
+        
+        temp_path = str(output_path).replace(".wav", "_temp.wav")
+        os.rename(output_path, temp_path)
+        
+        result = subprocess.run([
+            "ffmpeg", "-y", "-i", temp_path,
+            "-af", "silenceremove=start_periods=1:start_silence=0.1:start_threshold=-50dB,silenceremove=stop_periods=1:stop_silence=0.1:stop_threshold=-50dB,loudnorm=I=-16:TP=-1.5:LRA=11",
+            str(output_path)
+        ], capture_output=True)
+        
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        print(f"  Done!")
+        return True
+    except Exception as e:
+        print(f"  Error: {e}")
+        return False
+
+def main():
+    try:
+        from TTS.api import TTS
+    except ImportError:
+        print("TTS not found.")
+        return
+
+    model = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=False)
+    
+    base_dir = Path("/mnt/EDUAPP")
+    girl_ref = str(base_dir / "reference_voices" / "XTTSV2" / "Arabicgirl" / "girlarb_ref.wav")
+    girl_dir = base_dir / "public" / "recordings" / "ar" / "girl"
+
+    # Words to regenerate with fresh variants
+    items = [
+        ('blue',        'أَزْرَق'),
+        ('gris',        'رَمَادِيّ'),
+        ('orange',      'بُرْتُقَالِيّ'),
+        ('grandmother', 'جَدَّة'),
+        ('sister',      'أُخْت'),
+    ]
+
+    for key, text in items:
+        # Generate v1–v6 for each
+        for v in range(1, 7):
+            wav_path = girl_dir / f"{key}_v{v}.wav"
+            print(f"\n--- {key} V{v} ---")
+            synthesize(model, text, wav_path, girl_ref)
+            time.sleep(0.5)  # Small pause between files
+
+    print("\n✅ Done! New Arabic Girl variants generated for the 5 words.")
+
+if __name__ == "__main__":
+    main()

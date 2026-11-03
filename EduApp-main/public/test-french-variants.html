@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Audio Tester — FULL DYNAMIC LIST</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="audit_data.js"></script>
+    <style>
+        :root { --blue: #0984e3; --green: #00b894; --yellow: #fdcb6e; --red: #d63031; --bg: #f0f2f5; --card: #fff; --text: #2d3436; --muted: #636e72; --border: #dfe6e9; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        header { background: linear-gradient(135deg, #0984e3 0%, #6c5ce7 100%); color: white; padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .nav-tabs { display: flex; gap: 10px; padding: 20px 40px; }
+        .tab-btn { padding: 10px 20px; border-radius: 30px; border: none; background: #fff; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.2s; }
+        .tab-btn.active { background: var(--blue); color: white; transform: translateY(-2px); }
+        main { padding: 0 40px 40px; }
+        .section-title { font-size: 1.4rem; font-weight: 700; color: var(--blue); padding: 12px 16px; border-left: 5px solid var(--blue); background: white; border-radius: 8px; margin: 30px 0 14px; display: flex; align-items: center; justify-content: space-between; }
+        .section-title .count { font-size: 0.8rem; background: var(--blue); color: white; padding: 3px 12px; border-radius: 20px; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        thead tr { background: #f8f9ff; }
+        thead th { padding: 15px; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-align: left; border-bottom: 2px solid var(--border); }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.2s; }
+        tbody tr:hover { background: #fdfdff; }
+        tbody tr.regen-row { background: #fff5f5 !important; }
+        td { padding: 12px 15px; vertical-align: middle; }
+        .key-cell { font-family: monospace; font-size: 0.85rem; color: #555; }
+        .btns-cell { display: flex; flex-wrap: wrap; gap: 8px; }
+        .v-container { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 1px solid #eee; padding: 6px; border-radius: 8px; background: #fafafa; min-width: 75px; }
+        .v-btn { padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer; font-weight: 700; font-size: 0.75rem; width: 100%; transition: 0.2s; }
+        .v-btn.normal { background: #e8f0fe; color: var(--blue); }
+        .v-btn.playing { background: var(--green) !important; color: white !important; }
+        .v-btn.picked { background: var(--blue) !important; color: white !important; }
+        .v-btn.regen-btn { background: #ffeaa7; color: #d35400; font-size: 0.65rem; }
+        .v-btn.regen-btn.active { background: var(--red) !important; color: white !important; }
+        .pick-btn { padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); background: #fff; color: var(--muted); font-size: 0.65rem; cursor: pointer; width: 100%; font-weight: 700; }
+        .pick-btn.selected { background: var(--green); color: white; border-color: var(--green); }
+        .now-playing-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #2d3436; color: white; padding: 12px 30px; border-radius: 40px; display: none; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); align-items: center; gap: 15px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>🎙 French Audio Tester — Master List</h1>
+        <p style="font-size:0.8rem; opacity:0.8;">Automatically showing every file found on disk.</p>
+    </div>
+    <button onclick="copySelections()" style="background:var(--yellow); color:var(--text); border:none; padding:10px 20px; border-radius:25px; font-weight:700; cursor:pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">📋 Copy Selections</button>
+</header>
+
+<div class="nav-tabs">
+    <button class="tab-btn active" id="btn-girl" onclick="showTab('girl')">👧 Girl Voice</button>
+    <button class="tab-btn" id="btn-boy" onclick="showTab('boy')">👦 Boy Voice</button>
+</div>
+
+<main id="tab-girl">
+    <div class="section-title">📂 All Found Recordings <span class="count" id="count-girl">0</span></div>
+    <table id="tbl-girl">
+        <thead><tr><th>File Key / Name</th><th>Selection & Variants</th><th>Base File</th></tr></thead>
+        <tbody id="body-girl"></tbody>
+    </table>
+</main>
+
+<main id="tab-boy" style="display:none;">
+    <div class="section-title">📂 All Found Recordings <span class="count" id="count-boy">0</span></div>
+    <table id="tbl-boy">
+        <thead><tr><th>File Key / Name</th><th>Selection & Variants</th><th>Base File</th></tr></thead>
+        <tbody id="body-boy"></tbody>
+    </table>
+</main>
+
+<div class="now-playing-bar" id="nowPlaying">
+    <span id="nowPlayingText">Playing…</span>
+    <button onclick="stopAudio()" style="background:none; border:1px solid white; color:white; padding:2px 8px; border-radius:4px; font-size:0.6rem; cursor:pointer;">Stop</button>
+</div>
+
+<script>
+const DIRS = { 'girl': 'recordings/fr/girl/', 'boy': 'recordings/fr/boy/' };
+
+function buildTable(voice) {
+    const auditKey = 'fr_' + voice;
+    const data = AUDIT[auditKey] || {};
+    const tbody = document.getElementById('body-' + voice);
+    const dir = DIRS[voice];
+    tbody.innerHTML = '';
+    
+    const keys = Object.keys(data).sort((a, b) => a.localeCompare(b));
+    
+    keys.forEach(key => {
+        const tr = document.createElement('tr');
+        const variants = data[key];
+        
+        tr.innerHTML = `
+            <td class="key-cell">${key}</td>
+            <td><div class="btns-cell" id="btns-${voice}-${key}"></div></td>
+            <td><button class="v-btn normal" style="width:auto;" onclick="play('${dir}${key}.wav', this, '[BASE] ${key}')">Play Base</button></td>
+        `;
+        
+        const btnsDiv = tr.querySelector(`#btns-${voice}-${key}`);
+        
+        // REGENERATE BUTTON
+        const regenContainer = document.createElement('div');
+        regenContainer.className = 'v-container';
+        const regenBtn = document.createElement('button');
+        regenBtn.className = 'v-btn regen-btn';
+        regenBtn.textContent = 'REGEN 🔄';
+        regenBtn.onclick = () => {
+            tr.querySelectorAll('.pick-btn').forEach(b => { b.textContent = 'PICK'; b.classList.remove('selected'); });
+            tr.querySelectorAll('.v-btn').forEach(b => b.classList.remove('picked', 'active'));
+            regenBtn.classList.add('picked', 'active');
+            tr.classList.add('regen-row');
+        };
+        regenContainer.appendChild(regenBtn);
+        btnsDiv.appendChild(regenContainer);
+
+        // BASE PICK
+        const basePickContainer = document.createElement('div');
+        basePickContainer.className = 'v-container';
+        const baseBtn = document.createElement('button');
+        baseBtn.className = 'v-btn normal';
+        baseBtn.textContent = 'BASE';
+        baseBtn.onclick = () => play(`${dir}${key}.wav`, baseBtn, key);
+        const basePick = document.createElement('button');
+        basePick.className = 'pick-btn';
+        basePick.textContent = 'PICK';
+        basePick.onclick = () => selectRow(tr, basePick, baseBtn);
+        basePickContainer.appendChild(baseBtn);
+        basePickContainer.appendChild(basePick);
+        btnsDiv.appendChild(basePickContainer);
+
+        // VARIANT BUTTONS
+        variants.forEach(v => {
+            const vContainer = document.createElement('div');
+            vContainer.className = 'v-container';
+            const vBtn = document.createElement('button');
+            vBtn.className = 'v-btn normal';
+            vBtn.textContent = `V${v}`;
+            vBtn.onclick = () => play(`${dir}${key}_v${v}.wav`, vBtn, `${key} V${v}`);
+            const vPick = document.createElement('button');
+            vPick.className = 'pick-btn';
+            vPick.textContent = 'PICK';
+            vPick.onclick = () => selectRow(tr, vPick, vBtn);
+            vContainer.appendChild(vBtn);
+            vContainer.appendChild(vPick);
+            btnsDiv.appendChild(vContainer);
+        });
+        
+        tbody.appendChild(tr);
+    });
+    document.getElementById('count-' + voice).textContent = keys.length;
+}
+
+function selectRow(tr, pickBtn, vBtn) {
+    tr.querySelectorAll('.pick-btn').forEach(b => { b.textContent = 'PICK'; b.classList.remove('selected'); });
+    tr.querySelectorAll('.v-btn').forEach(b => b.classList.remove('picked', 'active'));
+    pickBtn.textContent = 'SELECTED ✅';
+    pickBtn.classList.add('selected');
+    vBtn.classList.add('picked');
+    tr.classList.remove('regen-row');
+}
+
+function showTab(v) {
+    document.getElementById('tab-girl').style.display = v === 'girl' ? 'block' : 'none';
+    document.getElementById('tab-boy').style.display = v === 'boy' ? 'block' : 'none';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.id === 'btn-' + v));
+}
+
+function copySelections() {
+    const lines = [];
+    ['girl', 'boy'].forEach(v => {
+        const rows = document.querySelectorAll(`#tab-${v} tbody tr`);
+        rows.forEach(row => {
+            const key = row.querySelector('.key-cell').textContent;
+            const picked = row.querySelector('.v-btn.picked');
+            if (picked) {
+                const status = picked.textContent.includes('REGEN') ? 'REGENERATE' : picked.textContent;
+                lines.push(`${v} ${key}: ${status}`);
+            }
+        });
+    });
+    if (lines.length === 0) return alert('No selections made yet!');
+    navigator.clipboard.writeText(lines.join('\n')).then(() => alert('Copied ' + lines.length + ' items to clipboard!'));
+}
+
+let currentAudio = null;
+function play(src, btn, label) {
+    if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+    const audio = new Audio(src);
+    currentAudio = audio;
+    btn.classList.add('playing');
+    document.getElementById('nowPlayingText').textContent = label;
+    document.getElementById('nowPlaying').style.display = 'flex';
+    audio.play().then(() => {
+        audio.onended = () => { btn.classList.remove('playing'); document.getElementById('nowPlaying').style.display = 'none'; };
+    }).catch(() => { 
+        btn.style.background = '#d63031';
+        btn.style.color = 'white';
+        setTimeout(() => { btn.style.background = ''; btn.style.color = ''; btn.classList.remove('playing'); }, 1000);
+    });
+}
+
+function stopAudio() {
+    if (currentAudio) { currentAudio.pause(); document.getElementById('nowPlaying').style.display = 'none'; }
+}
+
+function init() {
+    buildTable('girl');
+    buildTable('boy');
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
