@@ -1,12 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
+import TTSButton from '../components/TTSButton';
 
 const DIRECTIONS = [
-  { id: 'up', label: 'En haut !', emoji: '⬆️', hint: 'Lève les bras ou étire-toi vers le plafond !', arrowIcon: '▲' },
-  { id: 'left', label: 'À gauche !', emoji: '⬅️', hint: 'Penche ton corps ou montre la gauche !', arrowIcon: '◀' },
-  { id: 'right', label: 'À droite !', emoji: '➡️', hint: 'Penche ton corps ou montre la droite !', arrowIcon: '▶' },
-  { id: 'down', label: 'En bas !', emoji: '⬇️', hint: 'Baisse-toi ou touche tes genoux !', arrowIcon: '▼' },
+  {
+    id: 'up',
+    label: 'En haut',
+    hint: 'Lève les bras vers le haut',
+    symbol: '⬆️',
+    image: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    id: 'left',
+    label: 'À gauche',
+    hint: 'Montre la gauche',
+    symbol: '⬅️',
+    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    id: 'right',
+    label: 'À droite',
+    hint: 'Montre la droite',
+    symbol: '➡️',
+    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    id: 'down',
+    label: 'En bas',
+    hint: 'Touche tes genoux',
+    symbol: '⬇️',
+    image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80',
+  },
+];
+
+const CHOICES = [
+  { id: 'up', label: 'En haut', arrow: '▲' },
+  { id: 'left', label: 'Gauche', arrow: '◀' },
+  { id: 'right', label: 'Droite', arrow: '▶' },
+  { id: 'down', label: 'En bas', arrow: '▼' },
 ];
 
 export default function MoveDirectionActivity({ childSettings, onComplete }) {
@@ -14,22 +46,25 @@ export default function MoveDirectionActivity({ childSettings, onComplete }) {
 
   const [currentRound, setCurrentRound] = useState(0);
   const [isSuccessRound, setIsSuccessRound] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
   const [isFinished, setIsFinished] = useState(false);
 
   const currentDir = DIRECTIONS[currentRound] || DIRECTIONS[0];
 
   useEffect(() => {
     setIsSuccessRound(false);
+    setSelectedId(null);
     if (isAudioEnabled && !isFinished) {
-      speakText(`${currentDir.label} ${currentDir.hint}`, isAudioEnabled);
+      speakText(`${currentDir.label}. ${currentDir.hint}`, isAudioEnabled);
     }
     return () => stopSpeech();
   }, [currentRound, isAudioEnabled, isFinished, currentDir]);
 
   const handleTriggerDirection = (dirId) => {
+    setSelectedId(dirId);
     if (dirId === currentDir.id) {
       setIsSuccessRound(true);
-      speakText(`Super direction ! C'était bien ${currentDir.label}`, isAudioEnabled);
+      speakText('Bravo ! Bonne direction !', isAudioEnabled);
 
       setTimeout(() => {
         if (currentRound + 1 < DIRECTIONS.length) {
@@ -37,9 +72,10 @@ export default function MoveDirectionActivity({ childSettings, onComplete }) {
         } else {
           setIsFinished(true);
         }
-      }, 1500);
+      }, 1400);
     } else {
-      speakText(`Regarde bien la flèche. C'est ${currentDir.label}`, isAudioEnabled);
+      speakText('Essaie encore.', isAudioEnabled);
+      setTimeout(() => setSelectedId(null), 900);
     }
   };
 
@@ -54,18 +90,27 @@ export default function MoveDirectionActivity({ childSettings, onComplete }) {
 
   if (isFinished) {
     return (
-      <div className="bg-white rounded-3xl p-8 sm:p-10 text-center max-w-xl mx-auto border-3 border-[#22a06b]/30 shadow-xl">
-        <div className="text-7xl mb-4">🧭</div>
-        <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-bold text-[#22a06b] mb-2">
-          Sens de l'orientation au top !
-        </h2>
-        <p className="text-base text-[#6B7A8C] mb-6 font-semibold">
-          Tu as su reconnaître et suivre toutes les directions dans l'espace.
-        </p>
+      <div className="bg-white rounded-3xl p-8 sm:p-10 text-center max-w-xl mx-auto border-3 border-[#22a06b]/30 shadow-xl space-y-6">
+        <div className="w-24 h-24 mx-auto rounded-full bg-emerald-50 border-4 border-[#22a06b] flex items-center justify-center text-4xl font-black text-[#22a06b]">
+          ✓
+        </div>
+        <div>
+          <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-bold text-[#22a06b] mb-1">
+            Bravo !
+          </h2>
+          <p className="text-lg text-slate-600 font-bold">
+            Tu connais bien toutes les directions !
+          </p>
+        </div>
 
-        <div className="flex items-center justify-center gap-3 text-5xl mb-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <motion.span key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 + i * 0.15 }}>
+        <div className="flex items-center justify-center gap-3 text-5xl">
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2 + i * 0.15 }}
+            >
               ⭐
             </motion.span>
           ))}
@@ -74,104 +119,88 @@ export default function MoveDirectionActivity({ childSettings, onComplete }) {
         <button
           type="button"
           onClick={handleFinish}
-          className="btn-tactile btn-tactile--move w-full text-lg cursor-pointer"
+          className="btn-tactile btn-tactile--move w-full text-xl cursor-pointer"
         >
-          Enregistrer ma victoire et continuer ✨
+          Continuer ✨
         </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-5">
       {/* Top Header */}
-      <div className="flex items-center justify-between gap-4 bg-white px-5 py-3.5 rounded-2xl border-2 border-slate-200 shadow-xs">
-        <span className="text-xs font-black uppercase tracking-wider text-[#6B7A8C]">
-          Direction {currentRound + 1} / {DIRECTIONS.length}
+      <div className="flex items-center justify-between gap-4 bg-white px-5 py-3 rounded-2xl border-2 border-slate-200 shadow-xs">
+        <span className="text-xs font-black uppercase tracking-wider text-slate-500">
+          Étape {currentRound + 1} / {DIRECTIONS.length}
         </span>
         <div className="flex gap-2">
           {DIRECTIONS.map((_, i) => (
             <span
               key={i}
-              className={`w-3 h-3 rounded-full ${
-                i < currentRound ? 'bg-[#22a06b]' : i === currentRound ? 'bg-[#22a06b] ring-4 ring-[#22a06b]/20 scale-110' : 'bg-slate-200'
+              className={`w-3.5 h-3.5 rounded-full transition-all ${
+                i < currentRound
+                  ? 'bg-[#22a06b]'
+                  : i === currentRound
+                  ? 'bg-[#22a06b] ring-4 ring-[#22a06b]/20 scale-110'
+                  : 'bg-slate-200'
               }`}
             />
           ))}
         </div>
       </div>
 
-      {/* Target Direction Display */}
-      <div className="bg-white rounded-3xl p-8 text-center border-3 border-[#22a06b]/30 shadow-md relative"
-           style={{ boxShadow: '0 8px 0 #E2E8F0, 0 16px 28px -10px rgba(34, 160, 107, 0.15)' }}>
-        <span className="text-xs font-black uppercase tracking-wider text-[#22a06b] bg-[#E6FFFA] px-3.5 py-1 rounded-full inline-block mb-3">
-          Orientation Spatiale
-        </span>
-
-        {/* Big Animated Direction Indicator */}
-        <div className="text-8xl sm:text-9xl my-4 select-none animate-bounce-short">
-          {currentDir.emoji}
+      {/* Main Visual Demonstration Card */}
+      <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 shadow-md text-center space-y-4">
+        <div className="flex items-center justify-center gap-3">
+          <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-black text-slate-900">
+            {currentDir.label}
+          </h2>
+          <TTSButton text={`${currentDir.label}. ${currentDir.hint}`} />
         </div>
 
-        <h3 className="font-['Fredoka'] text-3xl font-bold text-[#2D3748]">
-          {currentDir.label}
-        </h3>
-        <p className="text-base text-[#6B7A8C] mt-1 font-semibold">
-          {currentDir.hint}
-        </p>
-      </div>
-
-      {/* 4 Direction Pad (Tactile D-Pad for Motor Orientation) */}
-      <div className="max-w-xs mx-auto grid grid-cols-3 gap-3 p-4 bg-white rounded-3xl border-2 border-slate-200 shadow-sm text-center">
-        {/* Row 1: UP */}
-        <div />
-        <button
-          type="button"
-          onClick={() => handleTriggerDirection('up')}
-          className="min-h-[64px] rounded-2xl bg-slate-100 hover:bg-[#22a06b] hover:text-white font-['Fredoka'] text-2xl font-bold border-2 border-slate-300 transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
-          aria-label="Direction Haut"
-        >
-          ▲
-        </button>
-        <div />
-
-        {/* Row 2: LEFT, CENTER, RIGHT */}
-        <button
-          type="button"
-          onClick={() => handleTriggerDirection('left')}
-          className="min-h-[64px] rounded-2xl bg-slate-100 hover:bg-[#22a06b] hover:text-white font-['Fredoka'] text-2xl font-bold border-2 border-slate-300 transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
-          aria-label="Direction Gauche"
-        >
-          ◀
-        </button>
-        <div className="flex items-center justify-center text-xs font-bold text-[#6B7A8C]">
-          Bouge !
+        {/* Real photographic gesture reference */}
+        <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 flex items-center justify-center">
+          <img
+            src={currentDir.image}
+            alt={currentDir.label}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs px-3.5 py-1.5 rounded-full text-xs font-black text-[#22a06b] border border-[#22a06b]/30 shadow-xs">
+            {currentDir.hint}
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => handleTriggerDirection('right')}
-          className="min-h-[64px] rounded-2xl bg-slate-100 hover:bg-[#22a06b] hover:text-white font-['Fredoka'] text-2xl font-bold border-2 border-slate-300 transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
-          aria-label="Direction Droite"
-        >
-          ▶
-        </button>
-
-        {/* Row 3: DOWN */}
-        <div />
-        <button
-          type="button"
-          onClick={() => handleTriggerDirection('down')}
-          className="min-h-[64px] rounded-2xl bg-slate-100 hover:bg-[#22a06b] hover:text-white font-['Fredoka'] text-2xl font-bold border-2 border-slate-300 transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
-          aria-label="Direction Bas"
-        >
-          ▼
-        </button>
-        <div />
       </div>
 
-      <p className="text-center text-xs font-bold text-[#6B7A8C]">
-        Fais le geste dans la pièce et touche la bonne flèche sur la manette.
-      </p>
+      {/* Tactile 4-Direction Control Buttons */}
+      <div className="grid grid-cols-2 gap-3.5">
+        {CHOICES.map((choice) => {
+          const isSelected = selectedId === choice.id;
+          const isTarget = choice.id === currentDir.id;
+          const isSuccessState = isSelected && isTarget;
+          const isFailState = isSelected && !isTarget;
+
+          return (
+            <button
+              key={choice.id}
+              type="button"
+              onClick={() => handleTriggerDirection(choice.id)}
+              disabled={isSuccessRound}
+              className={`min-h-[72px] rounded-2xl p-4 font-['Fredoka'] text-xl font-black flex items-center justify-center gap-3 transition-all cursor-pointer border-3 ${
+                isSuccessState
+                  ? 'bg-emerald-500 text-white border-emerald-600 scale-102 shadow-lg'
+                  : isFailState
+                  ? 'bg-rose-100 text-rose-800 border-rose-300'
+                  : 'bg-white text-slate-800 border-slate-200 hover:border-[#22a06b] hover:bg-emerald-50/50 shadow-xs active:scale-98'
+              }`}
+            >
+              <span className="text-2xl text-[#22a06b] font-bold">{choice.arrow}</span>
+              <span>{choice.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

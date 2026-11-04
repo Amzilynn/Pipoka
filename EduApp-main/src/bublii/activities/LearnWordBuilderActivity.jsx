@@ -1,21 +1,39 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
+import TTSButton from '../components/TTSButton';
 
+// Word builder with real photography — NO EMOJIS
 const WORD_BUILDER_ITEMS = [
-  { id: 'chat', word: 'CHAT', letters: ['C', 'H', 'A', 'T'], emoji: '🐱', hint: 'Il miaule : C - H - A - T' },
-  { id: 'velo', word: 'VELO', letters: ['V', 'E', 'L', 'O'], emoji: '🚲', hint: 'Deux roues pour rouler : V - E - L - O' },
-  { id: 'lune', word: 'LUNE', letters: ['L', 'U', 'N', 'E'], emoji: '🌙', hint: 'Elle brille la nuit : L - U - N - E' },
-  { id: 'pain', word: 'PAIN', letters: ['P', 'A', 'I', 'N'], emoji: '🥖', hint: 'Croustillant du boulanger : P - A - I - N' },
+  {
+    id: 'chat',
+    word: 'CHAT',
+    letters: ['C', 'H', 'A', 'T'],
+    image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80',
+    hint: 'La première lettre est C',
+  },
+  {
+    id: 'velo',
+    word: 'VELO',
+    letters: ['V', 'E', 'L', 'O'],
+    image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=600&q=80',
+    hint: 'La première lettre est V',
+  },
+  {
+    id: 'lune',
+    word: 'LUNE',
+    letters: ['L', 'U', 'N', 'E'],
+    image: 'https://images.unsplash.com/photo-1522030299830-16b8d3d049fe?auto=format&fit=crop&w=600&q=80',
+    hint: 'La première lettre est L',
+  },
 ];
 
 export default function LearnWordBuilderActivity({ childSettings, onComplete }) {
   const isAudioEnabled = childSettings?.audio !== false;
   const allowedHints = childSettings?.hints ?? 2;
-  const difficulty = childSettings?.difficulty || 4;
+  const assistanceMode = childSettings?.independence || 'progressive';
 
-  const totalRounds = Math.min(4, Math.max(2, difficulty - 1));
-
+  const totalRounds = 3;
   const [currentRound, setCurrentRound] = useState(0);
   const [placedLetters, setPlacedLetters] = useState([]);
   const [hintsUsed, setHintsUsed] = useState(0);
@@ -25,7 +43,7 @@ export default function LearnWordBuilderActivity({ childSettings, onComplete }) 
 
   const currentItem = WORD_BUILDER_ITEMS[currentRound] || WORD_BUILDER_ITEMS[0];
 
-  // Scramble letters for the drawer
+  // Scramble letters
   const availableTiles = useMemo(() => {
     const list = currentItem.letters.map((char, index) => ({
       id: `${char}-${index}`,
@@ -47,7 +65,8 @@ export default function LearnWordBuilderActivity({ childSettings, onComplete }) 
   }, [currentRound, availableTiles, isAudioEnabled, isFinished, currentItem]);
 
   const handleTileClick = (tile) => {
-    const expectedLetter = currentItem.letters[placedLetters.length];
+    const expectedIndex = placedLetters.length;
+    const expectedLetter = currentItem.letters[expectedIndex];
 
     if (tile.char === expectedLetter) {
       speakText(tile.char, isAudioEnabled);
@@ -69,7 +88,7 @@ export default function LearnWordBuilderActivity({ childSettings, onComplete }) 
         }, 1600);
       }
     } else {
-      speakText(`Essaie la lettre : ${expectedLetter}`, isAudioEnabled);
+      speakText(`Essaie la lettre ${expectedLetter}`, isAudioEnabled);
     }
   };
 
@@ -84,7 +103,7 @@ export default function LearnWordBuilderActivity({ childSettings, onComplete }) 
     setShowHint(true);
     const nextNeeded = currentItem.letters[placedLetters.length];
     if (isAudioEnabled) {
-      speakText(`Cherche la lettre ${nextNeeded}`, isAudioEnabled);
+      speakText(`Touche la lettre ${nextNeeded}`, isAudioEnabled);
     }
   };
 
@@ -99,18 +118,23 @@ export default function LearnWordBuilderActivity({ childSettings, onComplete }) 
 
   if (isFinished) {
     return (
-      <div className="bg-white rounded-3xl p-8 sm:p-10 text-center max-w-xl mx-auto border-3 border-[#2A6FB5]/30 shadow-xl">
-        <div className="text-7xl mb-4">🔤</div>
-        <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-bold text-[#2A6FB5] mb-2">
-          Génial ! Mots construits !
+      <div className="bg-white rounded-[2.5rem] p-8 sm:p-12 text-center max-w-xl mx-auto border-4 border-[#2A6FB5]/30 shadow-2xl space-y-6">
+        <div className="text-8xl animate-bounce">⭐</div>
+        <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-black text-[#2A6FB5]">
+          Bravo champion !
         </h2>
-        <p className="text-base text-[#6B7A8C] mb-6 font-semibold">
-          Tu as su assembler toutes les lettres dans le bon ordre.
+        <p className="text-lg text-[#64748B] font-bold">
+          Tu as construit tous les mots avec succès !
         </p>
 
-        <div className="flex items-center justify-center gap-3 text-5xl mb-6">
+        <div className="flex items-center justify-center gap-4 text-6xl py-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <motion.span key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 + i * 0.15 }}>
+            <motion.span
+              key={i}
+              initial={{ scale: 0, rotate: -25 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.2 + i * 0.2 }}
+            >
               ⭐
             </motion.span>
           ))}
@@ -119,30 +143,32 @@ export default function LearnWordBuilderActivity({ childSettings, onComplete }) 
         <button
           type="button"
           onClick={handleFinish}
-          className="btn-tactile btn-tactile--learn w-full text-lg cursor-pointer"
+          className="btn-tactile btn-tactile--learn w-full min-h-[64px] text-xl font-['Fredoka'] cursor-pointer shadow-lg"
         >
-          Enregistrer ma victoire et continuer ✨
+          Continuer ✨
         </button>
       </div>
     );
   }
 
-  const nextExpectedLetter = currentItem.letters[placedLetters.length];
-
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Top Header */}
-      <div className="flex items-center justify-between gap-4 bg-white px-5 py-3.5 rounded-2xl border-2 border-slate-200 shadow-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-black uppercase tracking-wider text-[#6B7A8C]">
-            Mot {currentRound + 1} / {totalRounds}
+      <div className="flex items-center justify-between gap-4 bg-white px-6 py-4 rounded-3xl border-3 border-slate-200 shadow-sm">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-black text-[#1E293B]">
+            Mot {currentRound + 1} sur {totalRounds}
           </span>
-          <div className="flex gap-2 ml-2">
+          <div className="flex gap-2">
             {Array.from({ length: totalRounds }).map((_, i) => (
               <span
                 key={i}
-                className={`w-3 h-3 rounded-full ${
-                  i < currentRound ? 'bg-[#2A6FB5]' : i === currentRound ? 'bg-[#2A6FB5] ring-4 ring-[#2A6FB5]/20 scale-110' : 'bg-slate-200'
+                className={`w-3.5 h-3.5 rounded-full transition-all ${
+                  i < currentRound
+                    ? 'bg-[#2A6FB5]'
+                    : i === currentRound
+                    ? 'bg-[#2A6FB5] ring-4 ring-[#2A6FB5]/25 scale-110'
+                    : 'bg-slate-200'
                 }`}
               />
             ))}
@@ -150,12 +176,13 @@ export default function LearnWordBuilderActivity({ childSettings, onComplete }) 
         </div>
 
         <div className="flex items-center gap-2">
+          <TTSButton text={`Écris le mot : ${currentItem.word}`} size="sm" />
           {allowedHints > 0 && (
             <button
               type="button"
               onClick={handleUseHint}
               disabled={hintsUsed >= allowedHints || showHint}
-              className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer ${
+              className={`min-h-[44px] px-3.5 py-1.5 rounded-2xl text-xs font-black flex items-center gap-1.5 cursor-pointer ${
                 hintsUsed < allowedHints && !showHint
                   ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
                   : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
@@ -164,71 +191,58 @@ export default function LearnWordBuilderActivity({ childSettings, onComplete }) 
               <span>💡 Indice</span>
             </button>
           )}
-
-          {placedLetters.length > 0 && (
-            <button
-              type="button"
-              onClick={handleResetLetters}
-              className="min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-bold text-[#6B7A8C] bg-slate-100 hover:bg-slate-200 cursor-pointer"
-            >
-              Effacer
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Target Word Card */}
-      <div className="bg-white rounded-3xl p-8 text-center border-3 border-[#2A6FB5]/30 shadow-md relative"
-           style={{ boxShadow: '0 8px 0 #E2E8F0, 0 16px 28px -10px rgba(42, 111, 177, 0.15)' }}>
-        <div className="text-8xl my-3 select-none animate-bounce-short">
-          {currentItem.emoji}
+      {/* Target Word Photo Card */}
+      <div className="bg-white rounded-[2.5rem] p-6 sm:p-7 text-center border-4 border-[#2A6FB5]/30 shadow-md">
+        <div className="w-48 h-48 sm:w-56 sm:h-56 mx-auto rounded-3xl overflow-hidden shadow-md border-4 border-white mb-4 bg-slate-100">
+          <img
+            src={currentItem.image}
+            alt={currentItem.word}
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        <h3 className="font-['Fredoka'] text-2xl font-bold text-[#2D3748] mb-5">
-          Assemble les lettres de : {currentItem.word}
-        </h3>
-
-        {/* Word Slot Boxes (Tactile Drop Targets) */}
-        <div className="flex justify-center gap-3 sm:gap-4 my-4">
+        {/* Word Slot Boxes (One slot per letter) */}
+        <div className="flex justify-center gap-3 my-4">
           {currentItem.letters.map((char, index) => {
             const placed = placedLetters[index];
-            const isNext = index === placedLetters.length;
+            const isNextExpected = index === placedLetters.length;
 
             return (
               <div
                 key={index}
-                className={`w-14 h-16 sm:w-16 sm:h-20 rounded-2xl flex items-center justify-center font-['Fredoka'] text-3xl font-extrabold border-3 transition-all ${
+                className={`w-16 h-18 sm:w-20 sm:h-22 rounded-2xl border-4 flex items-center justify-center font-['Fredoka'] text-3xl sm:text-4xl font-black transition-all ${
                   placed
-                    ? 'bg-[#EBF4FF] border-[#2A6FB5] text-[#2A6FB5] shadow-sm scale-102'
-                    : isNext
-                    ? 'bg-slate-50 border-dashed border-[#2A6FB5] animate-pulse text-transparent'
-                    : 'bg-slate-100 border-dashed border-slate-300 text-transparent'
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm'
+                    : isNextExpected
+                    ? 'bg-white border-[#2A6FB5] text-slate-400 shadow-md ring-4 ring-[#2A6FB5]/20 animate-pulse'
+                    : 'bg-slate-50 border-dashed border-slate-300 text-transparent'
                 }`}
               >
-                {placed ? placed.char : '_'}
+                {placed ? (
+                  placed.char
+                ) : (assistanceMode === 'assisted' && isNextExpected) || showHint ? (
+                  <span className="opacity-40">{char}</span>
+                ) : (
+                  '•'
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Hint banner */}
-        <AnimatePresence>
-          {showHint && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-3 p-3 bg-amber-50 text-amber-900 rounded-2xl text-xs font-bold border-2 border-amber-200"
-            >
-              💡 {currentItem.hint} (Touche la lettre : {nextExpectedLetter})
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {showHint && (
+          <p className="text-sm font-bold text-amber-800 bg-amber-50 py-1.5 px-4 rounded-xl inline-block mt-2">
+            💡 {currentItem.hint}
+          </p>
+        )}
       </div>
 
-      {/* Letter Tiles Drawer (3D tactile tiles) */}
-      <div className="bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-sm text-center">
-        <span className="text-xs font-black uppercase tracking-wider text-[#6B7A8C] block mb-4">
+      {/* Available Letter Tiles Drawer (Large 72px tactile tiles) */}
+      <div className="bg-white rounded-[2.5rem] p-6 text-center border-4 border-slate-200 shadow-sm">
+        <span className="text-xs font-black uppercase tracking-wider text-[#64748B] block mb-3">
           Touche la lettre suivante :
         </span>
 
@@ -237,22 +251,26 @@ export default function LearnWordBuilderActivity({ childSettings, onComplete }) 
             <motion.button
               key={tile.id}
               type="button"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.94 }}
               onClick={() => handleTileClick(tile)}
-              className="w-16 h-18 sm:w-20 sm:h-20 rounded-2xl bg-white border-3 border-slate-300 text-[#2D3748] font-['Fredoka'] text-3xl font-bold flex items-center justify-center cursor-pointer shadow-md hover:border-[#2A6FB5] hover:text-[#2A6FB5] transition-colors"
-              style={{ boxShadow: '0 5px 0 #CBD5E1' }}
+              className="w-16 h-18 sm:w-20 sm:h-22 rounded-2xl bg-slate-50 hover:bg-[#EBF4FF] border-3 border-slate-300 hover:border-[#2A6FB5] text-[#1E293B] font-['Fredoka'] text-3xl sm:text-4xl font-black flex items-center justify-center shadow-md cursor-pointer active:translate-y-1 transition-all"
             >
-              <span>{tile.char}</span>
+              {tile.char}
             </motion.button>
           ))}
         </div>
-      </div>
 
-      <p className="text-center text-xs font-bold text-[#6B7A8C]">
-        Touche les lettres une par une dans le bon ordre.
-      </p>
+        {placedLetters.length > 0 && (
+          <button
+            type="button"
+            onClick={handleResetLetters}
+            className="mt-4 px-4 py-2 rounded-xl text-xs font-black text-[#64748B] hover:text-[#1E293B] bg-slate-100 hover:bg-slate-200 cursor-pointer"
+          >
+            Recommencer le mot ↺
+          </button>
+        )}
+      </div>
     </div>
   );
 }
-

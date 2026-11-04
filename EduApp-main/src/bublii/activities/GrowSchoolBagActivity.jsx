@@ -1,45 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
+import TTSButton from '../components/TTSButton';
 
+// Real photos for school bag items
 const ITEMS_POOL = [
-  { id: 'cahier', name: 'Cahier d’école', emoji: '📓', needed: true },
-  { id: 'trousse', name: 'Trousse & stylos', emoji: '✏️', needed: true },
-  { id: 'gourde', name: 'Gourde d’eau', emoji: '💧', needed: true },
-  { id: 'gouter', name: 'Goûter', emoji: '🍎', needed: true },
-  { id: 'console', name: 'Console de jeu', emoji: '🎮', needed: false },
-  { id: 'coussin', name: 'Gros coussin', emoji: '🛏️', needed: false },
+  {
+    id: 'cahier',
+    name: 'Cahier',
+    image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=400&q=80',
+    needed: true,
+  },
+  {
+    id: 'trousse',
+    name: 'Trousse',
+    image: 'https://images.unsplash.com/photo-1612198527896-b4a4bffb6c1f?auto=format&fit=crop&w=400&q=80',
+    needed: true,
+  },
+  {
+    id: 'gourde',
+    name: 'Gourde',
+    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=400&q=80',
+    needed: true,
+  },
+  {
+    id: 'gouter',
+    name: 'Goûter',
+    image: 'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?auto=format&fit=crop&w=400&q=80',
+    needed: true,
+  },
+  {
+    id: 'console',
+    name: 'Console',
+    image: 'https://images.unsplash.com/photo-1486572788966-cfd3df1f5b42?auto=format&fit=crop&w=400&q=80',
+    needed: false,
+  },
+  {
+    id: 'coussin',
+    name: 'Coussin',
+    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80',
+    needed: false,
+  },
 ];
+
+const neededTotal = ITEMS_POOL.filter((i) => i.needed).length;
 
 export default function GrowSchoolBagActivity({ childSettings, onComplete }) {
   const isAudioEnabled = childSettings?.audio !== false;
 
   const [bagItems, setBagItems] = useState([]);
-  const [feedback, setFeedback] = useState(null);
+  const [lastFeedback, setLastFeedback] = useState(null); // { type, text }
   const [isFinished, setIsFinished] = useState(false);
 
   useEffect(() => {
     if (isAudioEnabled && !isFinished) {
-      speakText('Mets dans ton sac uniquement les affaires utiles pour l’école !', isAudioEnabled);
+      speakText('Mets dans ton sac les affaires pour l\'école !', isAudioEnabled);
     }
     return () => stopSpeech();
   }, [isAudioEnabled, isFinished]);
 
   const handleSelectItem = (item) => {
+    if (bagItems.some((b) => b.id === item.id)) return;
+
     if (item.needed) {
-      if (!bagItems.some((b) => b.id === item.id)) {
-        const next = [...bagItems, item];
-        setBagItems(next);
-        speakText(`Super ! On met ${item.name} dans le sac.`, isAudioEnabled);
-        setFeedback({ type: 'success', text: `Bien joué ! ${item.name} est dans le cartable.` });
-      }
+      const next = [...bagItems, item];
+      setBagItems(next);
+      speakText(`${item.name} dans le sac.`, isAudioEnabled);
+      setLastFeedback({ type: 'success', text: `✓ ${item.name}` });
     } else {
-      speakText(`Non, ${item.name} reste à la maison pour l'école !`, isAudioEnabled);
-      setFeedback({ type: 'error', text: `${item.name} doit rester à la maison.` });
+      speakText(`${item.name} reste à la maison.`, isAudioEnabled);
+      setLastFeedback({ type: 'error', text: `${item.name} reste à la maison.` });
     }
+
+    setTimeout(() => setLastFeedback(null), 1500);
   };
 
-  const neededTotal = ITEMS_POOL.filter((i) => i.needed).length;
   const isBagReady = bagItems.length === neededTotal;
 
   const handleFinish = () => {
@@ -53,130 +88,132 @@ export default function GrowSchoolBagActivity({ childSettings, onComplete }) {
 
   if (isFinished) {
     return (
-      <div className="bg-white rounded-3xl p-8 sm:p-10 text-center max-w-xl mx-auto border-3 border-[#F5A623]/30 shadow-xl">
-        <div className="text-7xl mb-4">🎒</div>
-        <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-bold text-[#F5A623] mb-2">
-          Cartable prêt pour l'école !
-        </h2>
-        <p className="text-base text-[#6B7A8C] mb-6 font-semibold">
-          Tu as su emporter exactement ce dont tu as besoin pour ta journée de classe.
-        </p>
-
-        <div className="flex items-center justify-center gap-3 text-5xl mb-6">
-          {Array.from({ length: 3 }).map((_, i) => (
+      <div className="bg-white rounded-3xl p-8 sm:p-10 text-center max-w-xl mx-auto border-3 border-[#F5A623]/30 shadow-xl space-y-6">
+        <div className="w-24 h-24 mx-auto rounded-full bg-amber-50 border-4 border-[#F5A623] flex items-center justify-center text-4xl font-black text-[#F5A623]">
+          ✓
+        </div>
+        <div>
+          <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-bold text-[#F5A623] mb-1">
+            Bravo !
+          </h2>
+          <p className="text-lg text-slate-600 font-bold">
+            Ton sac est prêt pour l'école !
+          </p>
+        </div>
+        <div className="flex items-center justify-center gap-3 text-5xl">
+          {[0, 1, 2].map((i) => (
             <motion.span key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 + i * 0.15 }}>
               ⭐
             </motion.span>
           ))}
         </div>
-
-        <button
-          type="button"
-          onClick={handleFinish}
-          className="btn-tactile btn-tactile--grow w-full text-lg cursor-pointer"
-        >
-          Enregistrer ma victoire et continuer ✨
+        <button type="button" onClick={handleFinish} className="btn-tactile btn-tactile--grow w-full text-xl cursor-pointer">
+          Continuer ✨
         </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Top Header */}
-      <div className="flex items-center justify-between gap-4 bg-white px-5 py-3.5 rounded-2xl border-2 border-slate-200 shadow-xs">
-        <span className="text-xs font-black uppercase tracking-wider text-[#6B7A8C]">
-          Préparation du sac d'école
-        </span>
-        <span className="text-xs font-extrabold text-[#F5A623] bg-[#FFFDF0] px-3 py-1 rounded-full border border-amber-200">
-          {bagItems.length} / {neededTotal} affaires rangées
+    <div className="max-w-2xl mx-auto space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 bg-white px-5 py-3 rounded-2xl border-2 border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2">
+          <TTSButton text="Mets dans ton sac les affaires pour l'école !" />
+          <span className="font-['Fredoka'] text-sm font-bold text-slate-700">
+            Affaires pour l'école
+          </span>
+        </div>
+        <span className="text-xs font-black text-[#F5A623] bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+          {bagItems.length} / {neededTotal}
         </span>
       </div>
 
-      {/* Backpack Display Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 text-center border-3 border-[#F5A623]/30 shadow-md relative"
-           style={{ boxShadow: '0 8px 0 #E2E8F0, 0 16px 28px -10px rgba(245, 166, 35, 0.15)' }}>
-        <div className="w-24 h-24 mx-auto rounded-3xl bg-[#FFFDF0] border-2 border-amber-200 flex items-center justify-center text-6xl shadow-xs animate-bounce-short">
-          🎒
-        </div>
-
-        <h3 className="font-['Fredoka'] text-2xl font-bold text-[#2D3748] mt-3">
-          Mon cartable d’école
-        </h3>
-
-        {/* Packed Items Strip inside backpack */}
-        <div className="flex flex-wrap items-center justify-center gap-3 my-4 min-h-[60px] bg-slate-50 p-3 rounded-2xl border-2 border-dashed border-slate-200">
-          {bagItems.length > 0 ? (
-            bagItems.map((b) => (
-              <span key={b.id} className="text-3xl bg-white p-2 rounded-xl border border-slate-200 shadow-xs animate-bounce-short">
-                {b.emoji}
-              </span>
-            ))
+      {/* Backpack visual — packed items as thumbnails */}
+      <div className="bg-white rounded-3xl p-5 border-3 border-[#F5A623]/40 shadow-md">
+        <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3 text-center">
+          Mon sac
+        </p>
+        <div className="min-h-[72px] flex flex-wrap gap-2 items-center justify-center bg-amber-50/60 rounded-2xl p-3 border-2 border-dashed border-amber-200">
+          {bagItems.length === 0 ? (
+            <span className="text-xs text-slate-400 font-bold">Vide pour l'instant…</span>
           ) : (
-            <span className="text-xs text-[#6B7A8C] font-semibold">
-              Le sac est vide pour l'instant. Touche les affaires utiles ci-dessous !
-            </span>
+            bagItems.map((b) => (
+              <motion.div
+                key={b.id}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="w-12 h-12 rounded-xl overflow-hidden border-2 border-emerald-300 shadow-xs"
+              >
+                <img src={b.image} alt={b.name} className="w-full h-full object-cover" loading="lazy" />
+              </motion.div>
+            ))
           )}
         </div>
 
-        {/* Feedback banner */}
+        {/* Inline feedback toast */}
         <AnimatePresence>
-          {feedback && (
+          {lastFeedback && (
             <motion.div
-              initial={{ opacity: 0, y: 5 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className={`text-xs font-bold p-2.5 rounded-xl border ${
-                feedback.type === 'success'
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  : 'bg-rose-50 text-rose-800 border-rose-300'
+              className={`mt-3 text-sm font-bold px-4 py-2 rounded-xl text-center ${
+                lastFeedback.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                  : 'bg-rose-50 text-rose-800 border border-rose-300'
               }`}
             >
-              {feedback.text}
+              {lastFeedback.text}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Available Items Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {/* Items grid — real photos, choose which go in the bag */}
+      <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
         {ITEMS_POOL.map((item) => {
           const isPacked = bagItems.some((b) => b.id === item.id);
-
           return (
             <motion.button
               key={item.id}
               type="button"
               disabled={isPacked}
-              whileHover={!isPacked ? { scale: 1.02 } : {}}
-              whileTap={!isPacked ? { scale: 0.98 } : {}}
+              whileTap={{ scale: 0.95 }}
               onClick={() => handleSelectItem(item)}
-              className={`min-h-[80px] p-3 rounded-3xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`rounded-2xl overflow-hidden border-3 cursor-pointer transition-all ${
                 isPacked
-                  ? 'bg-slate-100 border-2 border-slate-200 opacity-40 cursor-not-allowed'
-                  : 'card-choice'
+                  ? 'border-emerald-400 opacity-50 cursor-not-allowed'
+                  : 'border-slate-200 hover:border-[#F5A623] hover:shadow-md shadow-xs'
               }`}
             >
-              <span className="text-4xl">{item.emoji}</span>
-              <span className="font-['Fredoka'] text-sm font-bold text-[#2D3748]">
-                {item.name}
-              </span>
+              <div className="h-24 sm:h-28 bg-slate-100">
+                <img src={item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+              </div>
+              <div className={`px-2 py-2 text-center ${isPacked ? 'bg-emerald-50' : 'bg-white'}`}>
+                <span className="font-['Fredoka'] text-sm font-bold text-slate-800">
+                  {isPacked ? '✓ ' : ''}{item.name}
+                </span>
+              </div>
             </motion.button>
           );
         })}
       </div>
 
-      {/* Finish button when bag complete */}
-      {isBagReady && (
-        <button
-          type="button"
-          onClick={() => setIsFinished(true)}
-          className="btn-tactile btn-tactile--grow w-full text-base cursor-pointer"
-        >
-          Le sac est prêt pour l'école ! ✨
-        </button>
-      )}
+      {/* Complete button — only appears when bag is ready */}
+      <AnimatePresence>
+        {isBagReady && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            type="button"
+            onClick={() => setIsFinished(true)}
+            className="btn-tactile btn-tactile--grow w-full min-h-[64px] text-xl cursor-pointer"
+          >
+            Le sac est prêt ! ✨
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-

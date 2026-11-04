@@ -1,12 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
+import TTSButton from '../components/TTSButton';
 
+// Real situational photos for evening routine steps
 const EVENING_STEPS = [
-  { id: 'ranger', step: 1, title: 'Ranger ses jouets', emoji: '🧸', text: 'Je range mes jeux dans leurs bacs pour une chambre calme et propre.' },
-  { id: 'pyjama', step: 2, title: 'Mettre son pyjama', emoji: '🩱', text: 'J’enfile mon pyjama tout doux et confortable.' },
-  { id: 'histoire', step: 3, title: 'L’histoire du soir', emoji: '📖', text: 'J’écoute une histoire calme avec maman, papa ou tout seul.' },
-  { id: 'dodo', step: 4, title: 'Éteindre et s’endormir', emoji: '😴', text: 'Je pose ma tête sur l’oreiller et je fais de doux rêves.' },
+  {
+    id: 'ranger',
+    step: 1,
+    title: 'Ranger ses jouets',
+    text: 'Je range mes jeux.',
+    image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=700&q=80',
+  },
+  {
+    id: 'pyjama',
+    step: 2,
+    title: 'Mettre son pyjama',
+    text: 'J\'enfile mon pyjama.',
+    image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=700&q=80',
+  },
+  {
+    id: 'histoire',
+    step: 3,
+    title: 'L\'histoire du soir',
+    text: 'J\'écoute une histoire calme.',
+    image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=700&q=80',
+  },
+  {
+    id: 'dodo',
+    step: 4,
+    title: 'Bonne nuit !',
+    text: 'Je ferme les yeux et je m\'endors.',
+    image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=700&q=80',
+  },
 ];
 
 export default function GrowEveningActivity({ childSettings, onComplete }) {
@@ -19,13 +45,13 @@ export default function GrowEveningActivity({ childSettings, onComplete }) {
 
   useEffect(() => {
     if (isAudioEnabled && !isFinished) {
-      speakText(`Étape ${currentStep.step} : ${currentStep.title}. ${currentStep.text}`, isAudioEnabled);
+      speakText(`${currentStep.title}. ${currentStep.text}`, isAudioEnabled);
     }
     return () => stopSpeech();
   }, [currentStepIndex, isAudioEnabled, isFinished, currentStep]);
 
   const handleNextStep = () => {
-    speakText(`Bravo pour l'étape : ${currentStep.title} !`, isAudioEnabled);
+    speakText('Bravo !', isAudioEnabled);
     if (currentStepIndex + 1 < EVENING_STEPS.length) {
       setCurrentStepIndex((idx) => idx + 1);
     } else {
@@ -44,42 +70,40 @@ export default function GrowEveningActivity({ childSettings, onComplete }) {
 
   if (isFinished) {
     return (
-      <div className="bg-white rounded-3xl p-8 sm:p-10 text-center max-w-xl mx-auto border-3 border-[#F5A623]/30 shadow-xl">
-        <div className="text-7xl mb-4">🌙</div>
-        <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-bold text-[#F5A623] mb-2">
-          Bonne nuit et doux rêves !
-        </h2>
-        <p className="text-base text-[#6B7A8C] mb-6 font-semibold">
-          Tu as accompli toute ta routine du soir dans le calme.
-        </p>
-
-        <div className="flex items-center justify-center gap-3 text-5xl mb-6">
-          {Array.from({ length: 3 }).map((_, i) => (
+      <div className="bg-white rounded-3xl p-8 sm:p-10 text-center max-w-xl mx-auto border-3 border-[#F5A623]/30 shadow-xl space-y-6">
+        <div className="w-24 h-24 mx-auto rounded-full bg-amber-50 border-4 border-[#F5A623] flex items-center justify-center text-4xl font-black text-[#F5A623]">
+          ✓
+        </div>
+        <div>
+          <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-bold text-[#F5A623] mb-1">
+            Bonne nuit !
+          </h2>
+          <p className="text-lg text-slate-600 font-bold">
+            Tu as bien fait ta routine du soir.
+          </p>
+        </div>
+        <div className="flex items-center justify-center gap-3 text-5xl">
+          {[0, 1, 2].map((i) => (
             <motion.span key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 + i * 0.15 }}>
               ⭐
             </motion.span>
           ))}
         </div>
-
-        <button
-          type="button"
-          onClick={handleFinish}
-          className="btn-tactile btn-tactile--grow w-full text-lg cursor-pointer"
-        >
-          Enregistrer ma victoire et continuer ✨
+        <button type="button" onClick={handleFinish} className="btn-tactile btn-tactile--grow w-full text-xl cursor-pointer">
+          Continuer ✨
         </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Top Header */}
-      <div className="flex items-center justify-between gap-4 bg-white px-5 py-3.5 rounded-2xl border-2 border-slate-200 shadow-xs">
-        <span className="text-xs font-black uppercase tracking-wider text-[#6B7A8C]">
-          Étape {currentStep.step} sur {EVENING_STEPS.length}
+    <div className="max-w-2xl mx-auto space-y-5">
+      {/* Progress header */}
+      <div className="flex items-center justify-between gap-4 bg-white px-5 py-3 rounded-2xl border-2 border-slate-200 shadow-xs">
+        <span className="text-xs font-black uppercase tracking-wider text-slate-500">
+          Étape {currentStep.step} / {EVENING_STEPS.length}
         </span>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {EVENING_STEPS.map((s, i) => (
             <span
               key={s.id}
@@ -97,54 +121,64 @@ export default function GrowEveningActivity({ childSettings, onComplete }) {
         </div>
       </div>
 
-      {/* Main Routine Stage */}
-      <div className="bg-white rounded-3xl p-8 sm:p-10 text-center border-3 border-[#F5A623]/30 shadow-md relative"
-           style={{ boxShadow: '0 8px 0 #E2E8F0, 0 16px 28px -10px rgba(245, 166, 35, 0.15)' }}>
-        <span className="text-xs font-black uppercase tracking-wider text-[#F5A623] bg-[#FFFDF0] px-3.5 py-1 rounded-full inline-block mb-3">
-          Rituel du soir & Apaisement
-        </span>
-
-        <div className="text-8xl sm:text-9xl my-4 select-none animate-bounce-short">
-          {currentStep.emoji}
+      {/* Main step card — big photo */}
+      <div className="bg-white rounded-3xl overflow-hidden border-2 border-slate-200 shadow-md">
+        <div className="relative h-52 sm:h-64 bg-slate-100">
+          <img
+            src={currentStep.image}
+            alt={currentStep.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent flex items-end p-5">
+            <p className="font-['Fredoka'] text-white text-2xl sm:text-3xl font-black drop-shadow">
+              {currentStep.title}
+            </p>
+          </div>
         </div>
 
-        <h3 className="font-['Fredoka'] text-3xl font-bold text-[#2D3748] mb-2">
-          {currentStep.title}
-        </h3>
-
-        <p className="text-base text-[#6B7A8C] max-w-md mx-auto font-semibold leading-relaxed mb-6">
-          {currentStep.text}
-        </p>
-
-        <button
-          type="button"
-          onClick={handleNextStep}
-          className="btn-tactile btn-tactile--grow w-full max-w-sm mx-auto text-lg cursor-pointer"
-        >
-          <span>J'ai fait cette étape !</span>
-          <span>✓</span>
-        </button>
+        <div className="p-5 flex items-center justify-between gap-4">
+          <p className="font-['Fredoka'] text-lg text-slate-800 font-bold leading-snug">
+            {currentStep.text}
+          </p>
+          <TTSButton text={`${currentStep.title}. ${currentStep.text}`} />
+        </div>
       </div>
 
-      {/* Steps Strip Preview */}
+      {/* Confirm button */}
+      <button
+        type="button"
+        onClick={handleNextStep}
+        className="btn-tactile btn-tactile--grow w-full min-h-[64px] text-xl cursor-pointer flex items-center justify-center gap-3"
+      >
+        <span>C'est fait !</span>
+        <span>✓</span>
+      </button>
+
+      {/* Visual sequence strip */}
       <div className="grid grid-cols-4 gap-2">
         {EVENING_STEPS.map((step, idx) => (
           <div
             key={step.id}
-            className={`p-3 rounded-2xl border-2 text-center ${
+            className={`rounded-xl overflow-hidden border-2 transition-all ${
               idx === currentStepIndex
-                ? 'bg-[#FFFDF0] border-[#F5A623] shadow-xs'
-                : 'bg-white border-slate-200 opacity-60'
+                ? 'border-[#F5A623] shadow-xs ring-2 ring-[#F5A623]/30'
+                : idx < currentStepIndex
+                ? 'border-emerald-400 opacity-70'
+                : 'border-slate-200 opacity-40'
             }`}
           >
-            <span className="text-2xl block mb-1">{step.emoji}</span>
-            <span className="font-['Fredoka'] text-[11px] font-bold text-[#2D3748] line-clamp-1">
-              {step.title}
-            </span>
+            <div className="h-14 bg-slate-100">
+              <img src={step.image} alt={step.title} className="w-full h-full object-cover" loading="lazy" />
+            </div>
+            <div className="bg-white px-1.5 py-1 text-center">
+              <span className="font-['Fredoka'] text-[10px] font-bold text-slate-700 leading-tight block truncate">
+                {idx < currentStepIndex ? '✓ ' : ''}{step.title}
+              </span>
+            </div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-
