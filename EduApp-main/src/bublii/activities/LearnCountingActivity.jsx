@@ -7,20 +7,23 @@ import TTSButton from '../components/TTSButton';
 const COUNTING_ROUNDS = [
   {
     id: 'apples',
-    item: 'Pommes rouges',
-    image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=300&q=80',
+    item: 'pommes',
+    singular: 'Une pomme',
+    image: '/assets/images/counting/single-apple.jpg',
     count: 3,
   },
   {
-    id: 'oranges',
-    item: 'Balles',
-    image: 'https://images.unsplash.com/photo-1516738901171-8eb4fc13bd20?auto=format&fit=crop&w=300&q=80',
+    id: 'balls',
+    item: 'ballons',
+    singular: 'Un ballon',
+    image: '/assets/images/counting/single-ball.jpg',
     count: 4,
   },
   {
-    id: 'stars',
-    item: 'Petits chats',
-    image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=300&q=80',
+    id: 'cats',
+    item: 'chats',
+    singular: 'Un chat',
+    image: '/assets/images/counting/single-cat.jpg',
     count: 2,
   },
 ];
@@ -51,7 +54,7 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
     setSelectedNumber(null);
     setIsCorrect(null);
     if (isAudioEnabled && !isFinished) {
-      speakText(`Combien y a-t-il de ${currentItem.item} ? Touche chaque photo pour compter.`, isAudioEnabled);
+      speakText(`Combien y a-t-il de ${currentItem.item} ? Touche chaque objet pour compter.`, isAudioEnabled);
     }
     return () => stopSpeech();
   }, [currentRound, isAudioEnabled, isFinished, currentItem]);
@@ -166,7 +169,7 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
       {/* Counting Field (Real images, tactile tap to count) */}
       <div className="bg-white rounded-[2.5rem] p-7 text-center border-4 border-[#2A6FB5]/30 shadow-md">
         <h3 className="font-['Fredoka'] text-2xl sm:text-3xl font-black text-[#1E293B] mb-2">
-          Touche chaque photo pour compter :
+          Touche chaque objet pour compter :
         </h3>
 
         <div className="flex flex-wrap items-center justify-center gap-5 my-6 min-h-[140px]">
@@ -175,12 +178,15 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
 
             return (
               <motion.button
-                key={idx}
+                key={`${currentItem.id}-${idx}`}
                 type="button"
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.94 }}
                 onClick={() => handleTapObject(idx)}
-                className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden cursor-pointer border-4 transition-all ${
+                aria-label={`${currentItem.singular}${isCounted ? ', compté' : ''}`}
+                aria-pressed={isCounted}
+                disabled={selectedNumber !== null}
+                className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden bg-white cursor-pointer border-4 transition-all focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-[#2A6FB5] ${
                   isCounted
                     ? 'border-emerald-500 shadow-md ring-4 ring-emerald-400/30 scale-105'
                     : 'border-slate-300 hover:border-[#2A6FB5]'
@@ -188,12 +194,13 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
               >
                 <img
                   src={currentItem.image}
-                  alt={currentItem.item}
-                  className="w-full h-full object-cover"
+                  alt={currentItem.singular}
+                  className="w-full h-full object-contain p-1"
+                  draggable={false}
                 />
                 {isCounted && (
-                  <span className="absolute inset-0 bg-emerald-600/40 backdrop-blur-xs flex items-center justify-center text-white font-['Fredoka'] text-3xl font-black">
-                    ✓
+                  <span className="absolute right-1 top-1 h-7 w-7 rounded-full bg-emerald-700 flex items-center justify-center text-white font-['Fredoka'] text-base font-black">
+                    {Array.from(countedIndices).indexOf(idx) + 1}
                   </span>
                 )}
               </motion.button>

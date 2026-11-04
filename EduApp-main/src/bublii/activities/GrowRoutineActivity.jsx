@@ -3,14 +3,14 @@ import { motion } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
 import TTSButton from '../components/TTSButton';
 
-// Real photography of daily hygiene routines — NO EMOJIS
+// Local illustrations matched to each action or item
 const ROUTINE_STEPS = [
   {
     id: 'step-toothpaste',
     stepNumber: 1,
     title: 'Le dentifrice',
     instruction: 'Dépose une petite noisette de dentifrice sur la brosse.',
-    image: 'https://images.unsplash.com/photo-1559591937-e1032b4b4556?auto=format&fit=crop&w=600&q=80',
+    image: '/assets/images/grow/toothpaste.svg',
     actionText: 'J’ai mis le dentifrice ! ✨',
   },
   {
@@ -18,7 +18,7 @@ const ROUTINE_STEPS = [
     stepNumber: 2,
     title: 'Brosser les dents',
     instruction: 'Fais des petits ronds avec la brosse en haut et en bas.',
-    image: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=600&q=80',
+    image: '/assets/images/grow/brush.svg',
     actionText: 'Je frotte mes dents (Touche 3 fois)',
     needsClicks: 3,
   },
@@ -27,7 +27,7 @@ const ROUTINE_STEPS = [
     stepNumber: 3,
     title: 'Rincer la bouche',
     instruction: 'Prends un verre d’eau pour bien rincer la bouche.',
-    image: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80',
+    image: '/assets/images/grow/rinse.svg',
     actionText: 'J’ai rincé ma bouche ! 💧',
   },
   {
@@ -35,7 +35,7 @@ const ROUTINE_STEPS = [
     stepNumber: 4,
     title: 'Beau sourire propre !',
     instruction: 'Tout est propre et bien rangé. Bravo pour ton autonomie !',
-    image: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=600&q=80',
+    image: '/assets/images/grow/smile.svg',
     actionText: 'Terminer la routine ⭐',
   },
 ];
@@ -88,7 +88,7 @@ export default function GrowRoutineActivity({ childSettings, onComplete }) {
       <div className="bg-white rounded-[2.5rem] p-8 sm:p-12 text-center max-w-xl mx-auto border-4 border-[#F5A623]/30 shadow-2xl space-y-6">
         <div className="w-28 h-28 mx-auto rounded-full overflow-hidden shadow-md ring-4 ring-[#F5A623]/30">
           <img
-            src="https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=600&q=80"
+            src="/assets/images/grow/smile.svg"
             alt="Sourire"
             className="w-full h-full object-cover"
           />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useBublii } from '../context/BubliiContext';
@@ -81,6 +81,7 @@ export default function ParentDashboard() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 space-y-8">
+        <button type="button" onClick={() => navigate('/parent/calendrier')} className="mb-6 w-full rounded-2xl border-2 border-blue-200 bg-white p-5 text-left font-bold text-blue-800 shadow-sm hover:bg-blue-50">Mon calendrier · Tâches et étapes en photos →</button>
         {/* Child Profile Switcher & Identity Card */}
         <section className="bg-white rounded-3xl p-6 sm:p-8 border border-[#D1D5DB] shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
@@ -97,7 +98,7 @@ export default function ParentDashboard() {
                     {activeChild.firstName}
                   </h2>
                   <span className="bg-slate-100 text-[#6B7A8C] text-xs font-bold px-2.5 py-1 rounded-full">
-                    {activeChild.age} ans
+                    {activeChild.age ? `${activeChild.age} ans` : 'Âge non renseigné'}
                   </span>
                 </div>
                 <p className="text-sm text-[#6B7A8C] mt-0.5">

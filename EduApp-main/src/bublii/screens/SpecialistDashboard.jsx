@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useBublii } from '../context/BubliiContext';
@@ -81,6 +81,7 @@ export default function SpecialistDashboard() {
 
       {/* Main Workspace */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+        <button type="button" onClick={() => navigate('/specialiste/calendrier')} className="mb-6 w-full rounded-2xl border-2 border-blue-200 bg-white p-5 text-left font-bold text-blue-800 shadow-sm hover:bg-blue-50">Mon calendrier · Tâches et étapes en photos →</button>
         {/* Child Roster Navigation */}
         <section className="bg-white rounded-2xl p-4 border border-[#D1D5DB] shadow-xs">
           <div className="flex items-center justify-between mb-3 px-1">
@@ -119,7 +120,7 @@ export default function SpecialistDashboard() {
                         {p.firstName}
                       </p>
                       <span className="text-[11px] text-[#6B7A8C]">
-                        {p.age} ans • {p.tagline}
+                        {p.age ? `${p.age} ans` : 'Âge non renseigné'} • {p.tagline}
                       </span>
                     </div>
                   </div>
@@ -385,7 +386,7 @@ export default function SpecialistDashboard() {
                   Synthèse d'observation pour l'équipe éducative & thérapeutique
                 </h4>
                 <p className="text-xs text-[#2D3748] leading-relaxed mb-3">
-                  L'élève <strong>{activeChild.firstName}</strong> ({activeChild.age} ans) présente un engagement positif dans les activités à fort étayage visuel. La limitation à <strong>{activeChild.settings.answerChoices} choix</strong> et le maintien de la synthèse vocale facilitent son entrée dans la tâche sans découragement.
+                  L'élève <strong>{activeChild.firstName}</strong> {activeChild.age ? `(${activeChild.age} ans)` : ''} présente un engagement positif dans les activités à fort étayage visuel. La limitation à <strong>{activeChild.settings.answerChoices} choix</strong> et le maintien de la synthèse vocale facilitent son entrée dans la tâche sans découragement.
                 </p>
                 <div className="text-xs font-semibold text-[#6B7A8C] flex flex-wrap gap-4 pt-2 border-t border-[#2A6FB5]/20">
                   <span>Recommandation motrice : Poursuivre le travail de posture avec la caméra</span>

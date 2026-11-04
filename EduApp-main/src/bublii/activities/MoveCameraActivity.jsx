@@ -1,541 +1,279 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
+import { createPoseDetector } from '../utils/mediapipePose';
+import { STAR_GOAL, visiblePoint, makeStarTarget, handTouchesStar, bothHandsTouchStar } from '../utils/starCatch';
 import TTSButton from '../components/TTSButton';
-import {
-  createPoseDetector,
-  evaluatePoseMovement,
-  drawSkeletalLandmarks,
-} from '../utils/mediapipePose';
 
-// Supported movements
-const POSE_MOVEMENTS = [
-  {
-    id: 'arms-up',
-    title: 'Lève les bras',
-    instruction: 'Lève tes deux bras bien haut au-dessus de la tête !',
-    demoImage: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&w=600&q=80',
-    color: '#22A06B',
-  },
-  {
-    id: 'touch-head',
-    title: 'Touche ta tête',
-    instruction: 'Pose doucement tes mains sur le haut de ta tête !',
-    demoImage: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=600&q=80',
-    color: '#2A6FB5',
-  },
-];
+const SESSION_SECONDS = 60;
+const STAR_PAUSE_MS = 2500;
+const HOLD_MS = 800;
+const MAX_SCORE = Math.ceil(SESSION_SECONDS * 1000 / STAR_PAUSE_MS);
+
+function Star({ className = '' }) {
+  return <svg viewBox="0 0 100 100" aria-hidden="true" className={className}><path d="M50 5 L64 33 L95 38 L73 60 L78 92 L50 77 L22 92 L27 60 L5 38 L36 33 Z" fill="#FFD45D" stroke="#FFF8DC" strokeWidth="5" strokeLinejoin="round" /><circle cx="40" cy="49" r="3" fill="#745124" /><circle cx="60" cy="49" r="3" fill="#745124" /><path d="M40 60 Q50 69 60 60" fill="none" stroke="#745124" strokeWidth="3" strokeLinecap="round" /></svg>;
+}
 
 export default function MoveCameraActivity({ childSettings, onComplete }) {
-  const isAudioEnabled = childSettings?.audio !== false;
-
-  const [mode, setMode] = useState('prompt'); // 'prompt' | 'camera' | 'alternative' | 'error'
-  const [errorMessage, setErrorMessage] = useState('');
-  const [currentStep, setCurrentStep] = useState(0);
+  const audioEnabled = childSettings?.audio !== false;
+  const reduceMotion = useReducedMotion();
+  const [mode, setMode] = useState('prompt');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [score, setScore] = useState(0);
-  const [framingMessage, setFramingMessage] = useState('Positionne-toi debout face à l’écran');
-  const [isSuccessFeedback, setIsSuccessFeedback] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
-
-  // Alternative tactile mode state
-  const [alternativeProgress, setAlternativeProgress] = useState(0);
-
+  const [remaining, setRemaining] = useState(SESSION_SECONDS);
+  const [ready, setReady] = useState(false);
+  const remainingRef = useRef(SESSION_SECONDS * 1000);
+  const deadlineRef = useRef(null);
+  const [target, setTarget] = useState(null);
+  const [hands, setHands] = useState([]);
+  const [progress, setProgress] = useState(0);
+  const [celebrate, setCelebrate] = useState(false);
+  const [ratio, setRatio] = useState(4 / 3);
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
   const streamRef = useRef(null);
-  const poseDetectorRef = useRef(null);
-  const animFrameRef = useRef(null);
-  const holdCounterRef = useRef(0);
-  const isAdvancingRef = useRef(false);
+  const runRef = useRef(0);
+  const scoreRef = useRef(0);
+  const targetRef = useRef(null);
+  const lockedRef = useRef(false);
+  const holdRef = useRef(null);
+  const timerRef = useRef(null);
+  const mountedRef = useRef(false);
+  const reminderRef = useRef({ text: null, time: -Infinity });
 
-  const activeMove = POSE_MOVEMENTS[currentStep] || POSE_MOVEMENTS[0];
-
-  // Stop all camera tracks and clean up
-  const stopCamera = useCallback(() => {
-    if (animFrameRef.current) {
-      cancelAnimationFrame(animFrameRef.current);
-      animFrameRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    if (poseDetectorRef.current && typeof poseDetectorRef.current.close === 'function') {
-      try {
-        poseDetectorRef.current.close();
-      } catch {
-        // ignore
-      }
-      poseDetectorRef.current = null;
-    }
+  const stopStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
   }, []);
-
-  // Unmount cleanup
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      stopCamera();
+      mountedRef.current = false;
+      runRef.current += 1;
+      clearTimeout(timerRef.current);
+      stopStream();
       stopSpeech();
     };
-  }, [stopCamera]);
+  }, [stopStream]);
 
-  // Audio instruction on step change
   useEffect(() => {
-    if (isAudioEnabled && !isFinished && mode !== 'prompt') {
-      speakText(`${activeMove.title}. ${activeMove.instruction}`, isAudioEnabled);
-    }
-    holdCounterRef.current = 0;
-  }, [currentStep, isAudioEnabled, isFinished, mode, activeMove]);
-
-  // Advance to next movement with celebration
-  const handleSuccess = useCallback(() => {
-    if (isAdvancingRef.current) return;
-    isAdvancingRef.current = true;
-
-    setIsSuccessFeedback(true);
-    setScore((s) => s + 1);
-    speakText('Bravo ! Mouvement réussi !', isAudioEnabled);
-
-    setTimeout(() => {
-      setIsSuccessFeedback(false);
-
-      if (currentStep + 1 < POSE_MOVEMENTS.length) {
-        setCurrentStep((s) => s + 1);
-        holdCounterRef.current = 0;
-        isAdvancingRef.current = false;
-      } else {
-        stopCamera();
-        setIsFinished(true);
+    if (!ready || !['camera', 'touch'].includes(mode)) return;
+    const deadline = Date.now() + remainingRef.current;
+    deadlineRef.current = deadline;
+    const tick = () => {
+      remainingRef.current = Math.max(0, deadline - Date.now());
+      setRemaining(Math.ceil(remainingRef.current / 1000));
+      if (remainingRef.current === 0) {
+        lockedRef.current = true;
+        clearTimeout(timerRef.current);
+        setCelebrate(false);
+        stopStream();
+        setMode('finished');
       }
-    }, 1600);
-  }, [currentStep, isAudioEnabled, stopCamera]);
-
-  // MediaPipe Pose results callback
-  const handlePoseResults = useCallback(
-    (results) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext('2d');
-      const W = canvas.width;
-      const H = canvas.height;
-
-      ctx.clearRect(0, 0, W, H);
-
-      const landmarks = results?.poseLandmarks;
-      if (!landmarks) {
-        setFramingMessage('Recule-toi pour qu’on voie tout ton corps 🧍');
-        return;
-      }
-
-      // Biomechanical evaluation of posture & movement
-      const evaluation = evaluatePoseMovement(landmarks, activeMove.id);
-      setFramingMessage(evaluation.message);
-
-      // Draw skeleton on canvas in mirror mode
-      drawSkeletalLandmarks(ctx, landmarks, W, H, evaluation.isGestureValid);
-
-      // Require temporal stability (hold gesture for ~800ms)
-      if (evaluation.isGestureValid) {
-        holdCounterRef.current += 1;
-        if (holdCounterRef.current >= 6) {
-          handleSuccess();
-        }
-      } else {
-        holdCounterRef.current = Math.max(0, holdCounterRef.current - 1);
-      }
-    },
-    [activeMove.id, handleSuccess]
-  );
-
-  // Video frame inference loop
-  const startInferenceLoop = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const loop = async () => {
-      if (!streamRef.current || !videoRef.current) return;
-
-      if (video.readyState >= 2 && poseDetectorRef.current && !isAdvancingRef.current) {
-        try {
-          await poseDetectorRef.current.send({ image: video });
-        } catch {
-          // ignore frame errors
-        }
-      }
-
-      animFrameRef.current = requestAnimationFrame(loop);
     };
+    tick();
+    const interval = setInterval(tick, 100);
+    return () => {
+      clearInterval(interval);
+      remainingRef.current = Math.max(0, deadline - Date.now());
+      deadlineRef.current = null;
+    };
+  }, [mode, ready, stopStream]);
 
-    animFrameRef.current = requestAnimationFrame(loop);
-  }, []);
+  const catchStar = useCallback(() => {
+    if (lockedRef.current || !deadlineRef.current || Date.now() >= deadlineRef.current) return;
+    lockedRef.current = true;
+    const next = ++scoreRef.current;
+    setScore(next);
+    setCelebrate(true);
+    setProgress(0);
+    speakText('Bravo ! Une étoile attrapée avec tes deux mains !', audioEnabled);
+    timerRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      setCelebrate(false);
+      targetRef.current = null;
+      holdRef.current = null;
+      setTarget(null);
+      lockedRef.current = false;
+    }, STAR_PAUSE_MS);
+  }, [audioEnabled]);
 
-  // Initialize camera and MediaPipe Pose
-  const handleStartCamera = async () => {
-    setErrorMessage('');
-    setFramingMessage('Connexion à la caméra…');
+  const switchToTouch = () => {
+    runRef.current += 1;
+    stopStream();
+    holdRef.current = null;
+    targetRef.current = null;
+    setHands([]);
+    setProgress(0);
+    setReady(true);
+    setMode('touch');
+  };
 
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setErrorMessage("La caméra n'est pas disponible sur ce navigateur.");
+  const startCamera = async () => {
+    if (mode === 'starting') return;
+    const run = ++runRef.current;
+    setError('');
+    setReady(false);
+    setMode('starting');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('La caméra est indisponible. Tu peux jouer en touchant les étoiles.');
       setMode('error');
       return;
     }
-
     try {
-      // 1. Request camera
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-        },
-        audio: false,
-      });
-
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      if (!mountedRef.current || run !== runRef.current) { stream.getTracks().forEach(track => track.stop()); return; }
       streamRef.current = stream;
       setMode('camera');
-
-      // 2. Attach video stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
-      }
-
-      // 3. Initialize MediaPipe Pose model
-      setFramingMessage('Chargement du modèle de pose…');
-      const detector = await createPoseDetector(handlePoseResults);
-
-      if (detector) {
-        poseDetectorRef.current = detector;
-        setFramingMessage('Mets-toi debout face à l’écran 🧍');
-        startInferenceLoop();
-      } else {
-        setFramingMessage('Caméra active • Mode visuel prêt');
-      }
     } catch (err) {
-      console.warn('Camera error:', err);
-      let msg = "Accès à la caméra refusé ou indisponible.";
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        msg = "Clique sur 'Autoriser' dans ton navigateur pour utiliser la caméra.";
-      }
-      setErrorMessage(msg);
+      if (!mountedRef.current || run !== runRef.current) return;
+      setError(err.name === 'NotAllowedError' ? 'Autorise la caméra dans ton navigateur, puis réessaie.' : 'La caméra ne peut pas démarrer. Vérifie qu’elle est disponible.');
       setMode('error');
     }
   };
 
-  // Video Ref Callback guarantees stream binding
-  const setVideoCallback = useCallback((el) => {
-    videoRef.current = el;
-    if (el && streamRef.current && el.srcObject !== streamRef.current) {
-      el.srcObject = streamRef.current;
-      el.play().catch(() => {});
-    }
-  }, []);
+  useEffect(() => {
+    if (mode !== 'camera') return;
+    let cancelled = false, detector = null, frame = null, sending = false, errors = 0, lastVideoTime = -1;
+    const video = videoRef.current;
+    const fail = text => {
+      if (cancelled) return;
+      stopStream();
+      setError(text);
+      setMode('error');
+    };
+    const remind = text => {
+      setMessage(text);
+      const now = performance.now();
+      if (now - reminderRef.current.time >= 8000) {
+        reminderRef.current = { text, time: now };
+        speakText(text, audioEnabled);
+      }
+    };
+    const onResults = results => {
+      if (cancelled || lockedRef.current) return;
+      const landmarks = results?.poseLandmarks;
+      const wrists = [landmarks?.[15], landmarks?.[16]].filter(visiblePoint);
+      setHands(wrists.map(p => ({ x: 1 - p.x, y: p.y })));
+      if (wrists.length < 2) {
+        holdRef.current = null;
+        setProgress(0);
+        if (wrists.length === 1) remind('Non, utilise tes deux mains ensemble pour attraper l’étoile !');
+        else setMessage('Pour jouer, montre tes deux mains à la caméra.');
+        return;
+      }
+      if (!visiblePoint(landmarks?.[11]) || !visiblePoint(landmarks?.[12])) {
+        holdRef.current = null;
+        setProgress(0);
+        setMessage('Montre tes mains et tes épaules à la caméra.');
+        return;
+      }
+      if (!targetRef.current) {
+        targetRef.current = makeStarTarget(landmarks, scoreRef.current);
+        setTarget(targetRef.current);
+      }
+      const touching = bothHandsTouchStar(landmarks, targetRef.current, video.videoWidth, video.videoHeight);
+      const now = performance.now();
+      if (touching) {
+        if (!holdRef.current || now - holdRef.current.last > 300) holdRef.current = { start: now, last: now };
+        holdRef.current.last = now;
+        const held = Math.min(1, (now - holdRef.current.start) / HOLD_MS);
+        setProgress(held);
+        setMessage('Super, garde tes deux mains sur l’étoile un petit instant !');
+        if (held >= 1) catchStar();
+      } else {
+        holdRef.current = null;
+        setProgress(0);
+        if (wrists.some(wrist => handTouchesStar(wrist, targetRef.current, video.videoWidth, video.videoHeight))) {
+          remind('Non, utilise tes deux mains ensemble pour attraper l’étoile !');
+        } else {
+          setMessage('Approche tes deux mains ensemble de l’étoile.');
+        }
+      }
+    };
+    const loop = async () => {
+      if (cancelled) return;
+      if (video.readyState >= 2 && video.currentTime !== lastVideoTime && !lockedRef.current) {
+        lastVideoTime = video.currentTime;
+        sending = true;
+        try { await detector.send({ image: video }); errors = 0; }
+        catch { errors += 1; if (errors >= 3) fail('Le suivi des mains s’est arrêté. Réessaie ou choisis le jeu tactile.'); }
+        finally { sending = false; if (cancelled) { await detector.close(); return; } }
+      }
+      if (!cancelled) frame = requestAnimationFrame(loop);
+    };
+    const timeout = setTimeout(() => fail('Le suivi met trop de temps à démarrer. Réessaie ou joue sans caméra.'), 45000);
+    (async () => {
+      try {
+        setMessage('Préparation du jeu…');
+        video.srcObject = streamRef.current;
+        await video.play();
+        if (cancelled) return;
+        setRatio(video.videoWidth / video.videoHeight || 4 / 3);
+        detector = await createPoseDetector(onResults);
+        if (!detector) throw new Error('Detector unavailable');
+        if (cancelled) { await detector.close(); return; }
+        sending = true;
+        try { await detector.initialize(); } finally { sending = false; }
+        if (cancelled) { await detector.close(); return; }
+        clearTimeout(timeout);
+        setReady(true);
+        setMessage('Montre tes mains et tes épaules.');
+        speakText('Attrape chaque étoile avec tes deux mains ensemble. Garde-les sur l’étoile un petit instant.', audioEnabled);
+        frame = requestAnimationFrame(loop);
+      } catch {
+        fail('Le suivi ne peut pas démarrer. Réessaie ou joue en touchant les étoiles.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+      cancelAnimationFrame(frame);
+      if (detector && !sending) Promise.resolve(detector.close()).catch(() => {});
+      video.pause();
+      video.srcObject = null;
+      stopSpeech();
+    };
+  }, [mode, audioEnabled, catchStar, stopStream]);
 
-  // Canvas Ref Callback
-  const setCanvasCallback = useCallback((el) => {
-    canvasRef.current = el;
-    if (el) {
-      el.width = el.parentElement?.clientWidth || 640;
-      el.height = el.parentElement?.clientHeight || 480;
-    }
-  }, []);
+  const button = 'min-h-[56px] rounded-2xl border-2 px-5 py-3 font-bold focus-visible:outline-4 focus-visible:outline-offset-2';
+  if (mode === 'finished') return <div className="mx-auto max-w-xl space-y-5 rounded-3xl border-4 border-emerald-100 bg-white p-8 text-center">
+    <Star className="mx-auto h-24 w-24" /><h2 className="font-['Fredoka'] text-3xl font-black text-emerald-800">Bravo ! La minute est terminée !</h2>
+    <p className="text-2xl font-black text-amber-800">Score : {score} {score === 1 ? 'étoile attrapée' : 'étoiles attrapées'}</p>
+    <button type="button" className="btn-tactile btn-tactile--move min-h-[64px] w-full text-xl" onClick={() => onComplete?.({ score, maxScore: MAX_SCORE, label: 'Attraper les étoiles', module: 'move' })}>Continuer</button>
+  </div>;
 
-  // Alternative mode interaction
-  const handleAlternativeTap = () => {
-    const next = alternativeProgress + 1;
-    setAlternativeProgress(next);
-    if (next >= 2) {
-      handleSuccess();
-      setAlternativeProgress(0);
-    } else {
-      speakText('Encore une fois pour valider !', isAudioEnabled);
-    }
-  };
+  if (['prompt', 'starting', 'error'].includes(mode)) return <div className="mx-auto max-w-xl space-y-5 rounded-3xl border-4 border-emerald-100 bg-white p-6 text-center sm:p-8">
+    <Star className="mx-auto h-24 w-24" /><h2 className="font-['Fredoka'] text-3xl font-black text-emerald-800">Attrape les étoiles !</h2>
+    <p className="text-lg font-bold text-slate-600">Ce jeu se joue avec les deux mains ensemble ! Approche tes deux mains de la même étoile et garde-les dessus un petit instant pour marquer. Tu as 1 minute, assis ou debout, à ton rythme.</p>
+    <p className="text-sm text-slate-500">La vidéo est traitée sur cet appareil. Elle n’est pas enregistrée.</p>
+    {error && <p role="alert" className="rounded-xl bg-amber-50 p-4 font-bold text-amber-900">{error}</p>}
+    <button type="button" disabled={mode === 'starting'} onClick={startCamera} className={`${button} w-full border-emerald-700 bg-emerald-700 text-white disabled:opacity-50`}>{mode === 'starting' ? 'Ouverture de la caméra…' : error ? 'Réessayer la caméra' : 'Jouer avec la caméra'}</button>
+    <button type="button" onClick={switchToTouch} className={`${button} w-full border-slate-200 bg-slate-50 text-slate-700`}>Jouer en touchant les étoiles</button>
+  </div>;
 
-  const handleFinish = () => {
-    stopCamera();
-    onComplete?.({
-      score: 3,
-      maxScore: 3,
-      label: 'Imiter le mouvement',
-      module: 'move',
-    });
-  };
-
-  // 1. VICTORY SCREEN
-  if (isFinished) {
-    return (
-      <div className="bg-white rounded-[2.5rem] p-8 sm:p-12 text-center max-w-xl mx-auto border-4 border-[#22A06B]/30 shadow-2xl space-y-6">
-        <div className="text-8xl animate-bounce">🏆</div>
-        <h2 className="font-['Fredoka'] text-4xl sm:text-5xl font-black text-[#22A06B]">
-          Bravo champion !
-        </h2>
-        <p className="text-xl text-[#64748B] font-bold">
-          Tu as réussi les mouvements avec ton corps !
-        </p>
-
-        <div className="flex items-center justify-center gap-4 text-6xl py-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <motion.span
-              key={i}
-              initial={{ scale: 0, rotate: -25 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.2 + i * 0.2 }}
-            >
-              ⭐
-            </motion.span>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={handleFinish}
-          className="btn-tactile btn-tactile--move w-full min-h-[68px] text-2xl font-['Fredoka'] cursor-pointer shadow-xl"
-        >
-          Continuer ✨
-        </button>
-      </div>
-    );
-  }
-
-  // 2. WELCOME / PROMPT SCREEN
-  if (mode === 'prompt') {
-    return (
-      <div className="bg-white rounded-[2.5rem] p-8 sm:p-10 text-center max-w-xl mx-auto border-4 border-[#22A06B]/30 shadow-2xl space-y-6">
-        <div className="w-24 h-24 mx-auto rounded-3xl bg-[#E6FFFA] flex items-center justify-center text-6xl shadow-sm">
-          🧍
-        </div>
-
-        <div>
-          <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-black text-[#22A06B] mb-2">
-            Imiter le mouvement
-          </h2>
-          <p className="text-base text-[#64748B] font-bold leading-relaxed max-w-md mx-auto">
-            Mets-toi debout pour bouger ton corps devant l’écran !
-          </p>
-        </div>
-
-        {/* Privacy note */}
-        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 text-left flex items-start gap-3">
-          <span className="text-2xl">🔒</span>
-          <p className="text-xs text-emerald-950 font-bold leading-relaxed">
-            <span className="block font-black text-emerald-900 mb-0.5">100% sécurisé et local :</span>
-            Aucune image n'est enregistrée ni transmise. Tout reste sur ton appareil.
-          </p>
-        </div>
-
-        {/* Action buttons */}
-        <div className="space-y-3 pt-2">
-          <button
-            type="button"
-            onClick={handleStartCamera}
-            className="btn-tactile btn-tactile--move w-full min-h-[68px] text-2xl font-['Fredoka'] cursor-pointer flex items-center justify-center gap-3 shadow-xl"
-          >
-            <span>Allumer la caméra</span>
-            <span className="text-3xl">📷</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMode('alternative')}
-            className="w-full min-h-[56px] rounded-2xl bg-slate-100 hover:bg-slate-200 text-[#1E293B] border-2 border-slate-300 font-['Fredoka'] text-lg font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
-          >
-            <span>Jouer sans caméra (Mode tactile) ✋</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 3. ERROR SCREEN
-  if (mode === 'error') {
-    return (
-      <div className="bg-white rounded-[2.5rem] p-8 text-center max-w-xl mx-auto border-4 border-amber-300 shadow-xl space-y-6">
-        <div className="text-6xl">⚠️</div>
-        <h3 className="font-['Fredoka'] text-3xl font-black text-[#1E293B]">
-          Caméra non accessible
-        </h3>
-        <p className="text-base text-[#64748B] font-bold">
-          {errorMessage || "Impossible d'accéder à la caméra."}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <button
-            type="button"
-            onClick={handleStartCamera}
-            className="btn-tactile btn-tactile--move px-6 min-h-[56px] text-lg font-['Fredoka'] cursor-pointer"
-          >
-            Réessayer 🔄
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('alternative')}
-            className="px-6 min-h-[56px] rounded-2xl bg-slate-100 hover:bg-slate-200 text-[#1E293B] border-2 border-slate-300 font-['Fredoka'] text-base font-bold cursor-pointer"
-          >
-            Jouer sans caméra ✋
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 4. ALTERNATIVE TACTILE MODE (No penalty)
-  if (mode === 'alternative') {
-    return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Top Header */}
-        <div className="bg-white rounded-[2rem] px-6 py-4 border-3 border-slate-200 shadow-sm flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-4xl select-none">✋</span>
-            <div>
-              <span className="text-xs font-black uppercase tracking-wider text-[#22A06B] block">
-                Mode sans caméra • Geste {currentStep + 1} / {POSE_MOVEMENTS.length}
-              </span>
-              <h2 className="font-['Fredoka'] text-2xl sm:text-3xl font-black text-[#1E293B]">
-                {activeMove.title}
-              </h2>
-            </div>
-            <TTSButton text={activeMove.instruction} size="sm" />
-          </div>
-
-          <button
-            type="button"
-            onClick={handleStartCamera}
-            className="min-h-[44px] px-3.5 py-1.5 rounded-2xl text-xs font-black bg-slate-100 hover:bg-slate-200 text-[#1E293B] border-2 border-slate-300 transition-all cursor-pointer"
-          >
-            Activer caméra 📷
-          </button>
-        </div>
-
-        {/* Guided Demonstration Card */}
-        <div className="bg-white rounded-[2.5rem] p-7 text-center border-4 border-[#22A06B]/30 shadow-md space-y-5">
-          <div className="w-52 h-52 mx-auto rounded-3xl overflow-hidden shadow-md border-4 border-white bg-slate-100">
-            <img
-              src={activeMove.demoImage}
-              alt={activeMove.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          <h3 className="font-['Fredoka'] text-3xl font-black text-[#1E293B]">
-            {activeMove.instruction}
-          </h3>
-
-          <button
-            type="button"
-            onClick={handleAlternativeTap}
-            className="btn-tactile btn-tactile--move w-full max-w-md mx-auto min-h-[72px] text-2xl font-['Fredoka'] cursor-pointer shadow-xl flex items-center justify-center gap-3"
-          >
-            <span>J'ai fait le mouvement !</span>
-            <span className="bg-white/30 px-3 py-1 rounded-full text-base font-black">
-              {alternativeProgress} / 2
-            </span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 5. ACTIVE CAMERA MODE (Real-time MediaPipe Pose Landmarks)
-  return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      {/* Top Banner: Step & Audio */}
-      <div className="bg-white rounded-[2rem] px-6 py-4 border-3 border-slate-200 shadow-sm flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div>
-            <span className="text-xs font-black uppercase tracking-wider text-[#22A06B] block">
-              Geste {currentStep + 1} / {POSE_MOVEMENTS.length}
-            </span>
-            <h2 className="font-['Fredoka'] text-2xl sm:text-3xl font-black text-[#1E293B]">
-              {activeMove.title}
-            </h2>
-          </div>
-          <TTSButton text={activeMove.instruction} size="sm" />
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Score Counter */}
-          <div className="flex items-center gap-2 bg-[#FFFDF0] border-2 border-amber-300 px-4 py-2 rounded-2xl shadow-xs">
-            <span className="text-2xl">⭐</span>
-            <span className="font-['Fredoka'] text-2xl font-black text-[#1E293B]">{score}</span>
-          </div>
-
-          {/* Switch to alternative */}
-          <button
-            type="button"
-            onClick={() => {
-              stopCamera();
-              setMode('alternative');
-            }}
-            className="min-h-[48px] px-3.5 py-1.5 rounded-2xl text-xs font-black bg-slate-100 hover:bg-slate-200 text-[#1E293B] border-2 border-slate-300 transition-all cursor-pointer"
-          >
-            Sans caméra ✋
-          </button>
-        </div>
-      </div>
-
-      {/* Main Camera Stage with Live Skeleton Overlay */}
-      <div className="space-y-4">
-        <div className="bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-[#22A06B] relative aspect-[4/3] sm:aspect-video flex items-center justify-center">
-          {/* Mirrored Video Feed */}
-          <video
-            ref={setVideoCallback}
-            playsInline
-            muted
-            autoPlay
-            className="w-full h-full object-cover transform -scale-x-100"
-          />
-
-          {/* Real-time Skeleton Overlay */}
-          <canvas
-            ref={setCanvasCallback}
-            className="absolute inset-0 pointer-events-none w-full h-full transform -scale-x-100"
-          />
-
-          {/* Dynamic Framing & Pose Guidance Pill */}
-          <div className="absolute top-4 inset-x-0 flex justify-center pointer-events-none px-4">
-            <div className="bg-black/80 backdrop-blur-md text-white font-['Fredoka'] text-sm sm:text-base font-bold px-5 py-2 rounded-full border border-white/25 flex items-center gap-2 shadow-lg">
-              <span>{framingMessage}</span>
-            </div>
-          </div>
-
-          {/* Live Landmark Tracker Badge */}
-          <div className="absolute bottom-4 left-4 bg-black/75 backdrop-blur-md text-white text-xs font-bold px-3.5 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Pose Tracker actif</span>
-          </div>
-
-          {/* Success Overlay when detected */}
-          <AnimatePresence>
-            {isSuccessFeedback && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-emerald-600/95 backdrop-blur-md flex flex-col items-center justify-center text-white z-30 space-y-2"
-              >
-                <span className="text-8xl animate-bounce">⭐</span>
-                <h3 className="font-['Fredoka'] text-5xl font-black">Bravo !</h3>
-                <p className="text-2xl font-bold">+1 Étoile ⭐</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Safety tactile button (child is never blocked) */}
-        <div className="text-center pt-1">
-          <button
-            type="button"
-            onClick={handleSuccess}
-            className="btn-tactile btn-tactile--move w-full min-h-[64px] text-2xl font-['Fredoka'] cursor-pointer shadow-lg flex items-center justify-center gap-3"
-          >
-            <span>J'ai fait le geste !</span>
-            <span className="text-3xl">⭐</span>
-          </button>
-        </div>
-      </div>
+  const touchTarget = [{ x: .5, y: .35 }, { x: .28, y: .5 }, { x: .72, y: .5 }, { x: .35, y: .3 }, { x: .65, y: .3 }][score % STAR_GOAL];
+  const star = mode === 'touch' ? touchTarget : target;
+  return <div className="mx-auto w-full max-w-3xl space-y-4">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-slate-200 bg-white p-4">
+      <h2 className="font-['Fredoka'] text-2xl font-bold text-slate-800">Attrape l’étoile</h2>
+      <span className="rounded-xl bg-amber-50 px-4 py-2 text-xl font-black text-amber-800" aria-label={`Score : ${score} étoiles`}>Score : {score} ⭐</span>
+      <span role="timer" aria-label={`Temps restant : ${remaining} secondes`} className="rounded-xl bg-emerald-50 px-4 py-2 text-xl font-black tabular-nums text-emerald-800">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</span>
+      <TTSButton text={"Attrape l’étoile avec tes deux mains ensemble."} />
     </div>
-  );
+    <p className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-3 text-center text-xl font-black text-emerald-800" aria-live="polite">{celebrate ? 'Bravo !' : 'Utilise tes deux mains ensemble !'}</p>
+    <div className="relative overflow-hidden rounded-3xl border-4 border-emerald-300 bg-[#E8F3F0]" style={{ aspectRatio: ratio }}>
+      {mode === 'camera' && <video ref={videoRef} muted playsInline autoPlay className="h-full w-full -scale-x-100" />}
+      {hands.map((p, i) => <span key={i} aria-hidden="true" className="pointer-events-none absolute h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-emerald-400/60" style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%` }} />)}
+      {star && !celebrate && <motion.div key={score} initial={reduceMotion ? false : { scale: .8 }} animate={{ scale: 1 }} className="absolute h-[23%] aspect-square" style={{ x: '-50%', y: '-50%', left: `${star.x * 100}%`, top: `${star.y * 100}%` }}>
+        {mode === 'touch' ? <button type="button" onClick={catchStar} aria-label="Attraper l’étoile" className="h-full min-h-[64px] w-full min-w-[64px] rounded-full focus-visible:outline-4 focus-visible:outline-emerald-700"><Star className="h-full w-full" /></button> : <Star className="pointer-events-none h-full w-full" />}
+      </motion.div>}
+      {celebrate && <div role="status" className="absolute inset-0 flex flex-col items-center justify-center bg-white/80"><Star className="h-24 w-24" /><p className="font-['Fredoka'] text-3xl font-black text-emerald-800">Bravo !</p></div>}
+    </div>
+    <p role="status" className="min-h-[48px] text-center text-lg font-bold text-slate-700">{mode === 'camera' ? message : 'Touche l’étoile avec tes deux mains ensemble.'}</p>
+    {mode === 'camera' && <>
+      <div role="progressbar" aria-label="Étoile presque attrapée" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)} className="h-3 overflow-hidden rounded-full bg-emerald-100"><div className="h-full bg-emerald-600" style={{ width: `${progress * 100}%` }} /></div>
+      <button type="button" onClick={switchToTouch} className={`${button} w-full border-slate-200 bg-white text-slate-700`}>Jouer sans caméra</button>
+    </>}
+  </div>;
 }

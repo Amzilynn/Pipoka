@@ -1,61 +1,59 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { speakText, stopSpeech } from '../utils/speech';
-import TTSButton from '../components/TTSButton';
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { speakText, stopSpeech } from "../utils/speech";
+import TTSButton from "../components/TTSButton";
+import { ObjectPicture } from "../components/ActivityIllustration";
 
-// High-definition real photography of everyday objects — NO EMOJIS
+// Everyday objects illustrated locally for reliable picture matching.
 const VOCABULARY_ITEMS = [
   {
-    id: 'chat',
-    word: 'Le chat',
-    image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80',
-    category: 'Animaux',
+    id: "chat",
+    word: "Le chat",
+    category: "Animaux",
     hint: 'Il fait "Miaou" !',
   },
   {
-    id: 'pomme',
-    word: 'La pomme',
-    image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=600&q=80',
-    category: 'Fruits',
-    hint: 'Un fruit rouge et croquant !',
+    id: "pomme",
+    word: "La pomme",
+    category: "Fruits",
+    hint: "Un fruit rouge et croquant !",
   },
   {
-    id: 'voiture',
-    word: 'La voiture',
-    image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
-    category: 'Véhicules',
-    hint: 'Elle roule avec 4 roues !',
+    id: "voiture",
+    word: "La voiture",
+    category: "Véhicules",
+    hint: "Elle roule avec 4 roues !",
   },
   {
-    id: 'ballon',
-    word: 'Le ballon',
-    image: 'https://images.unsplash.com/photo-1516738901171-8eb4fc13bd20?auto=format&fit=crop&w=600&q=80',
-    category: 'Jeux',
-    hint: 'Tout rond pour jouer dehors !',
+    id: "ballon",
+    word: "Le ballon",
+    category: "Jeux",
+    hint: "Tout rond pour jouer dehors !",
   },
   {
-    id: 'fleur',
-    word: 'La fleur',
-    image: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=600&q=80',
-    category: 'Nature',
-    hint: 'Elle sent très bon !',
+    id: "fleur",
+    word: "La fleur",
+    category: "Nature",
+    hint: "Elle sent très bon !",
   },
   {
-    id: 'arbre',
-    word: 'L’arbre',
-    image: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=600&q=80',
-    category: 'Nature',
-    hint: 'Il a des feuilles vertes et un grand tronc !',
+    id: "arbre",
+    word: "L’arbre",
+    category: "Nature",
+    hint: "Il a des feuilles vertes et un grand tronc !",
   },
 ];
 
 export default function LearnActivity({ childSettings, onComplete }) {
-  const answerChoicesCount = childSettings?.answerChoices || 3;
+  const answerChoicesCount = Math.min(4, Math.max(2, Math.floor(Number(childSettings?.answerChoices) || 2)));
   const isAudioEnabled = childSettings?.audio !== false;
   const allowedHints = childSettings?.hints ?? 2;
   const difficultyLevel = childSettings?.difficulty || 4;
 
   const totalRounds = Math.min(4, Math.max(2, difficultyLevel - 1));
+
+  const feedbackTimer = useRef(null);
+  useEffect(() => () => clearTimeout(feedbackTimer.current), []);
 
   const [currentRound, setCurrentRound] = useState(0);
   const [score, setScore] = useState(0);
@@ -73,15 +71,25 @@ export default function LearnActivity({ childSettings, onComplete }) {
   const targetItem = rounds[currentRound] || rounds[0];
 
   const currentOptions = useMemo(() => {
-    const distractors = VOCABULARY_ITEMS.filter((item) => item.id !== targetItem.id);
-    const shuffledDistractors = [...distractors].sort(() => 0.5 - Math.random());
-    const selectedDistractors = shuffledDistractors.slice(0, answerChoicesCount - 1);
+    const distractors = VOCABULARY_ITEMS.filter(
+      (item) => item.id !== targetItem.id,
+    );
+    const shuffledDistractors = [...distractors].sort(
+      () => 0.5 - Math.random(),
+    );
+    const selectedDistractors = shuffledDistractors.slice(
+      0,
+      answerChoicesCount - 1,
+    );
     return [targetItem, ...selectedDistractors].sort(() => 0.5 - Math.random());
   }, [targetItem, answerChoicesCount]);
 
   useEffect(() => {
     if (isAudioEnabled && !isFinished) {
-      speakText(`Trouve la photo : ${targetItem.word}`, isAudioEnabled);
+      speakText(
+        `C'est le mot ${targetItem.word}. Trouve la image qui correspond.`,
+        isAudioEnabled,
+      );
     }
     return () => stopSpeech();
   }, [currentRound, isAudioEnabled, isFinished, targetItem]);
@@ -94,10 +102,10 @@ export default function LearnActivity({ childSettings, onComplete }) {
     setIsCorrect(correct);
 
     if (correct) {
-      speakText(`Bravo ! C'est bien : ${targetItem.word}`, isAudioEnabled);
+      speakText(`Bravo ! C'est bien ${targetItem.word}.`, isAudioEnabled);
       setScore((s) => s + 1);
 
-      setTimeout(() => {
+      feedbackTimer.current = setTimeout(() => {
         if (currentRound + 1 < totalRounds) {
           setCurrentRound((r) => r + 1);
           setSelectedWord(null);
@@ -110,7 +118,7 @@ export default function LearnActivity({ childSettings, onComplete }) {
       }, 1400);
     } else {
       speakText(`Essaie encore !`, isAudioEnabled);
-      setTimeout(() => {
+      feedbackTimer.current = setTimeout(() => {
         setSelectedWord(null);
         setIsCorrect(null);
       }, 1200);
@@ -123,7 +131,7 @@ export default function LearnActivity({ childSettings, onComplete }) {
     setShowHintText(true);
 
     const wrongOption = currentOptions.find(
-      (opt) => opt.id !== targetItem.id && !eliminatedOptions.includes(opt.id)
+      (opt) => opt.id !== targetItem.id && !eliminatedOptions.includes(opt.id),
     );
     if (wrongOption && currentOptions.length - eliminatedOptions.length > 2) {
       setEliminatedOptions((prev) => [...prev, wrongOption.id]);
@@ -138,8 +146,8 @@ export default function LearnActivity({ childSettings, onComplete }) {
     onComplete?.({
       score,
       maxScore: totalRounds,
-      label: 'Associer mots et images',
-      module: 'learn',
+      label: "Associer mots et images",
+      module: "learn",
     });
   };
 
@@ -153,7 +161,7 @@ export default function LearnActivity({ childSettings, onComplete }) {
           Super réussite !
         </h2>
         <p className="text-base text-[#64748B] font-bold">
-          Tu as bien reconnu toutes les photos !
+          Tu as bien reconnu le mot et son image !
         </p>
 
         <div className="flex items-center justify-center gap-4 text-5xl py-2">
@@ -194,10 +202,10 @@ export default function LearnActivity({ childSettings, onComplete }) {
                 key={i}
                 className={`w-3.5 h-3.5 rounded-full transition-all ${
                   i < currentRound
-                    ? 'bg-[#2A6FB5]'
+                    ? "bg-[#2A6FB5]"
                     : i === currentRound
-                    ? 'bg-[#2A6FB5] ring-4 ring-[#2A6FB5]/25 scale-110'
-                    : 'bg-slate-200'
+                      ? "bg-[#2A6FB5] ring-4 ring-[#2A6FB5]/25 scale-110"
+                      : "bg-slate-200"
                 }`}
               />
             ))}
@@ -214,8 +222,8 @@ export default function LearnActivity({ childSettings, onComplete }) {
               disabled={hintsUsed >= allowedHints || showHintText}
               className={`min-h-[44px] px-3.5 py-1.5 rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
                 hintsUsed < allowedHints && !showHintText
-                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
-                  : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                  ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300"
+                  : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
               }`}
             >
               <span>💡 Indice</span>
@@ -224,57 +232,58 @@ export default function LearnActivity({ childSettings, onComplete }) {
         </div>
       </div>
 
-      {/* Featured Real Photo Card (No Emojis, High Aesthetics) */}
+      {/* Featured Word + Photo Match */}
       <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 text-center border-4 border-[#2A6FB5]/30 shadow-md">
-        <div className="w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-3xl overflow-hidden shadow-lg border-4 border-white mb-4 bg-slate-100">
-          <img
-            src={targetItem.image}
-            alt={targetItem.word}
-            className="w-full h-full object-cover"
-          />
-        </div>
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-6">
+          <div className="text-left">
+            <div className="flex items-center justify-center gap-3">
+              <h3 className="font-['Fredoka'] text-4xl sm:text-5xl font-black text-[#1E293B]">
+                {targetItem.word}
+              </h3>
+            </div>
 
-        <div className="flex items-center justify-center gap-3">
-          <h3 className="font-['Fredoka'] text-3xl sm:text-4xl font-black text-[#1E293B]">
-            Quel est ce mot ?
-          </h3>
-          <TTSButton text={`Quel est ce mot ? C'est ${targetItem.word}`} size="sm" />
-        </div>
+            <p className="text-sm font-black text-[#64748B] mt-1">
+              Touche l’image qui correspond à ce mot.
+            </p>
 
-        {/* Hint text if active */}
-        <AnimatePresence>
-          {showHintText && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-3 p-3 bg-amber-50 text-amber-900 rounded-2xl text-sm font-bold border-2 border-amber-200"
-            >
-              💡 {targetItem.hint}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            <AnimatePresence>
+              {showHintText && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-3 p-3 bg-amber-50 text-amber-900 rounded-2xl text-sm font-bold border-2 border-amber-200"
+                >
+                  💡 {targetItem.hint}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
 
-      {/* 3D Tactile Word Cards (2, 3 or 4 choices) */}
+      {/* Image Choice Cards (match the word) */}
       <div
         className={`grid gap-4 ${
           answerChoicesCount === 2
-            ? 'grid-cols-2'
+            ? "grid-cols-2"
             : answerChoicesCount === 3
-            ? 'grid-cols-1 sm:grid-cols-3'
-            : 'grid-cols-2 sm:grid-cols-4'
+              ? "grid-cols-1 sm:grid-cols-3"
+              : "grid-cols-2 sm:grid-cols-4"
         }`}
       >
         {currentOptions.map((option) => {
           const isSelected = selectedWord === option.id;
           const isEliminated = eliminatedOptions.includes(option.id);
 
-          let stateClass = 'card-choice';
+          let stateClass = "card-choice";
           if (isSelected) {
-            stateClass = isCorrect ? 'card-choice card-choice--correct' : 'card-choice card-choice--error';
+            stateClass = isCorrect
+              ? "card-choice card-choice--correct"
+              : "card-choice card-choice--error";
           } else if (isEliminated) {
-            stateClass = 'bg-slate-100 border-2 border-slate-200 text-slate-300 opacity-40 cursor-not-allowed rounded-3xl min-h-[84px] flex items-center justify-center';
+            stateClass =
+              "bg-slate-100 border-2 border-slate-200 text-slate-300 opacity-40 cursor-not-allowed rounded-3xl min-h-[84px] flex items-center justify-center";
           }
 
           return (
@@ -283,15 +292,35 @@ export default function LearnActivity({ childSettings, onComplete }) {
               type="button"
               disabled={selectedWord !== null || isEliminated}
               onClick={() => handleSelectOption(option)}
-              whileHover={!isEliminated && selectedWord === null ? { scale: 1.02 } : {}}
-              whileTap={!isEliminated && selectedWord === null ? { scale: 0.98 } : {}}
-              className={`min-h-[84px] p-4 rounded-3xl font-['Fredoka'] text-2xl font-bold flex items-center justify-center ${stateClass}`}
+              whileHover={
+                !isEliminated && selectedWord === null ? { scale: 1.02 } : {}
+              }
+              whileTap={
+                !isEliminated && selectedWord === null ? { scale: 0.98 } : {}
+              }
+              aria-label={option.word}
+              aria-pressed={isSelected}
+              className={`min-h-[160px] p-3 rounded-3xl font-['Fredoka'] text-2xl font-bold flex flex-col items-center justify-center ${stateClass}`}
             >
-              <span>{option.word}</span>
+              <ObjectPicture kind={option.id} className="h-36 w-full sm:h-44" />
+              {isSelected && <span className="text-base" role="status">{isCorrect ? 'Bravo !' : 'Essaie encore'}</span>}
             </motion.button>
           );
         })}
       </div>
+
+      {/* Mini word recap for the winner */}
+      {isCorrect && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-[#EBF4FF] border-2 border-[#2A6FB5] rounded-2xl p-4 text-center"
+        >
+          <span className="font-['Fredoka'] text-xl font-black text-[#2A6FB5]">
+            Bravo ! Tu as trouvé : {targetItem.word}.
+          </span>
+        </motion.div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,9 @@
-import React from 'react';
+﻿import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useBublii } from '../context/BubliiContext';
+
+import Logo from './Logo';
 
 export default function RoleSelector() {
   const navigate = useNavigate();
@@ -15,28 +17,8 @@ export default function RoleSelector() {
   return (
     <div className="min-h-screen bublii-bg-canvas text-[#1E293B] flex flex-col justify-between p-4 sm:p-8">
       {/* Top Header & Brand */}
-      <header className="max-w-4xl mx-auto w-full pt-4 text-center">
-        {/* Signature Booblii Emblem */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="inline-flex items-center gap-3 bg-white px-7 py-3 rounded-full shadow-sm border-3 border-slate-200"
-        >
-          {/* Booblii 4 Color Dots */}
-          <div className="flex items-center -space-x-1">
-            <span className="w-4 h-4 rounded-full bg-[#2A6FB5] ring-2 ring-white" />
-            <span className="w-4 h-4 rounded-full bg-[#E84545] ring-2 ring-white" />
-            <span className="w-4 h-4 rounded-full bg-[#22A06B] ring-2 ring-white" />
-            <span className="w-4 h-4 rounded-full bg-[#F5A623] ring-2 ring-white" />
-          </div>
-          <span className="font-['Fredoka'] text-3xl sm:text-4xl font-black tracking-tight text-[#1E293B]">
-            Booblii
-          </span>
-          <span className="text-xs font-black px-3 py-1 rounded-full bg-[#2A6FB5]/15 text-[#2A6FB5] uppercase tracking-wider">
-            Inclusif
-          </span>
-        </motion.div>
+      <header className="brand-welcome max-w-4xl mx-auto w-full pt-4 text-center">
+        <Logo size="lg" />
 
         {/* Profile Selector */}
         <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-2.5 bg-white p-2.5 rounded-2xl border-2 border-slate-200 shadow-sm">
@@ -72,6 +54,7 @@ export default function RoleSelector() {
 
       {/* Role Selection 3-Card Grid (Simplified, Beautiful) */}
       <main className="max-w-4xl mx-auto w-full my-8">
+
         <h2 className="sr-only">Choisissez votre espace</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* 1. ENFANT */}
@@ -91,8 +74,8 @@ export default function RoleSelector() {
             }}
           >
             <div>
-              <div className="w-16 h-16 rounded-2xl bg-[#EBF4FF] text-[#2A6FB5] flex items-center justify-center text-4xl mb-4 group-hover:scale-110 transition-transform shadow-xs">
-                ⭐
+              <div className="w-16 h-16 rounded-2xl bg-[#EBF4FF] text-[#2A6FB5] flex items-center justify-center text-3xl font-black mb-4 group-hover:scale-110 transition-transform shadow-xs">
+                E
               </div>
               <div className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#2A6FB5]/15 text-[#2A6FB5] mb-2">
                 Espace Enfant
@@ -125,8 +108,8 @@ export default function RoleSelector() {
             }}
           >
             <div>
-              <div className="w-16 h-16 rounded-2xl bg-[#FFF5F5] text-[#E84545] flex items-center justify-center text-4xl mb-4 group-hover:scale-110 transition-transform shadow-xs">
-                🏡
+              <div className="w-16 h-16 rounded-2xl bg-[#FFF5F5] text-[#E84545] flex items-center justify-center text-3xl font-black mb-4 group-hover:scale-110 transition-transform shadow-xs">
+                P
               </div>
               <div className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#E84545]/15 text-[#E84545] mb-2">
                 Espace Parent
@@ -159,8 +142,8 @@ export default function RoleSelector() {
             }}
           >
             <div>
-              <div className="w-16 h-16 rounded-2xl bg-[#E6FFFA] text-[#22A06B] flex items-center justify-center text-4xl mb-4 group-hover:scale-110 transition-transform shadow-xs">
-                🩺
+              <div className="w-16 h-16 rounded-2xl bg-[#E6FFFA] text-[#22A06B] flex items-center justify-center text-3xl font-black mb-4 group-hover:scale-110 transition-transform shadow-xs">
+                S
               </div>
               <div className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#22A06B]/15 text-[#22A06B] mb-2">
                 Spécialiste & ESMS
@@ -180,7 +163,7 @@ export default function RoleSelector() {
 
       {/* Footer */}
       <footer className="text-center py-4 text-xs font-bold text-[#64748B]">
-        Booblii • Espace adapté à la trisomie 21
+        Boblii • Espace adapté à la trisomie 21
       </footer>
     </div>
   );

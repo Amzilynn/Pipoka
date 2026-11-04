@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
 import TTSButton from '../components/TTSButton';
+import MovementPicture from '../components/MovementPicture';
+import SequenceCamera from '../components/SequenceCamera';
+import { matchesDirectionPose } from '../utils/directionPose';
 
 const DIRECTIONS = [
   {
@@ -9,28 +12,24 @@ const DIRECTIONS = [
     label: 'En haut',
     hint: 'Lève les bras vers le haut',
     symbol: '⬆️',
-    image: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'left',
     label: 'À gauche',
     hint: 'Montre la gauche',
     symbol: '⬅️',
-    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'right',
     label: 'À droite',
     hint: 'Montre la droite',
     symbol: '➡️',
-    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'down',
     label: 'En bas',
-    hint: 'Touche tes genoux',
+    hint: 'Baisse les deux bras vers le bas',
     symbol: '⬇️',
-    image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80',
   },
 ];
 
@@ -49,9 +48,14 @@ export default function MoveDirectionActivity({ childSettings, onComplete }) {
   const [selectedId, setSelectedId] = useState(null);
   const [isFinished, setIsFinished] = useState(false);
 
+  const lockedRef = useRef(false);
+  const timerRef = useRef(null);
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
   const currentDir = DIRECTIONS[currentRound] || DIRECTIONS[0];
 
   useEffect(() => {
+    lockedRef.current = false;
     setIsSuccessRound(false);
     setSelectedId(null);
     if (isAudioEnabled && !isFinished) {
@@ -61,12 +65,14 @@ export default function MoveDirectionActivity({ childSettings, onComplete }) {
   }, [currentRound, isAudioEnabled, isFinished, currentDir]);
 
   const handleTriggerDirection = (dirId) => {
+    if (lockedRef.current || isFinished) return;
+    lockedRef.current = true;
     setSelectedId(dirId);
     if (dirId === currentDir.id) {
       setIsSuccessRound(true);
       speakText('Bravo ! Bonne direction !', isAudioEnabled);
 
-      setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         if (currentRound + 1 < DIRECTIONS.length) {
           setCurrentRound((r) => r + 1);
         } else {
@@ -75,7 +81,7 @@ export default function MoveDirectionActivity({ childSettings, onComplete }) {
       }, 1400);
     } else {
       speakText('Essaie encore.', isAudioEnabled);
-      setTimeout(() => setSelectedId(null), 900);
+      timerRef.current = setTimeout(() => { lockedRef.current = false; setSelectedId(null); }, 900);
     }
   };
 
@@ -159,18 +165,18 @@ export default function MoveDirectionActivity({ childSettings, onComplete }) {
           <TTSButton text={`${currentDir.label}. ${currentDir.hint}`} />
         </div>
 
-        {/* Real photographic gesture reference */}
-        <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 flex items-center justify-center">
-          <img
-            src={currentDir.image}
-            alt={currentDir.label}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs px-3.5 py-1.5 rounded-full text-xs font-black text-[#22a06b] border border-[#22a06b]/30 shadow-xs">
-            {currentDir.hint}
-          </div>
-        </div>
+        <p className="text-sm font-bold text-slate-600">Le personnage est vu de dos : sa gauche est de ton côté gauche.</p>
+        <p className="text-sm text-slate-600">Active la cam?ra et reproduis le geste. Garde la bonne position un petit instant pour passer ? la suite.</p>
+        <SequenceCamera
+          gesture={currentDir.id}
+          disabled={selectedId !== null}
+          celebrating={isSuccessRound}
+          model={<MovementPicture pose={currentDir.id} title={currentDir.hint} />}
+          matchPose={matchesDirectionPose}
+          onMatch={handleTriggerDirection}
+          onInteraction={() => {}}
+        />
+        <p className="text-xs text-slate-500">La vid?o est trait?e sur cet appareil et n?est pas enregistr?e. Tu peux aussi utiliser les boutons.</p>
       </div>
 
       {/* Tactile 4-Direction Control Buttons */}
@@ -186,7 +192,7 @@ export default function MoveDirectionActivity({ childSettings, onComplete }) {
               key={choice.id}
               type="button"
               onClick={() => handleTriggerDirection(choice.id)}
-              disabled={isSuccessRound}
+              disabled={selectedId !== null}
               className={`min-h-[72px] rounded-2xl p-4 font-['Fredoka'] text-xl font-black flex items-center justify-center gap-3 transition-all cursor-pointer border-3 ${
                 isSuccessState
                   ? 'bg-emerald-500 text-white border-emerald-600 scale-102 shadow-lg'

@@ -3,42 +3,42 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
 import TTSButton from '../components/TTSButton';
 
-// Real photos for school bag items
+// Local illustrations matched to each action or item
 const ITEMS_POOL = [
   {
     id: 'cahier',
     name: 'Cahier',
-    image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=400&q=80',
+    image: '/assets/images/grow/cahier.svg',
     needed: true,
   },
   {
     id: 'trousse',
     name: 'Trousse',
-    image: 'https://images.unsplash.com/photo-1612198527896-b4a4bffb6c1f?auto=format&fit=crop&w=400&q=80',
+    image: '/assets/images/grow/trousse.svg',
     needed: true,
   },
   {
     id: 'gourde',
     name: 'Gourde',
-    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=400&q=80',
+    image: '/assets/images/grow/gourde.svg',
     needed: true,
   },
   {
     id: 'gouter',
     name: 'Goûter',
-    image: 'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?auto=format&fit=crop&w=400&q=80',
+    image: '/assets/images/grow/gouter.svg',
     needed: true,
   },
   {
     id: 'console',
     name: 'Console',
-    image: 'https://images.unsplash.com/photo-1486572788966-cfd3df1f5b42?auto=format&fit=crop&w=400&q=80',
+    image: '/assets/images/grow/console.svg',
     needed: false,
   },
   {
     id: 'coussin',
     name: 'Coussin',
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80',
+    image: '/assets/images/grow/coussin.svg',
     needed: false,
   },
 ];

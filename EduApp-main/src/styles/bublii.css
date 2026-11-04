@@ -166,3 +166,40 @@
   outline: 4px solid #2A6FB5;
   outline-offset: 3px;
 }
+
+/* Original PDF artwork in a compact horizontal lockup. */
+.bublii-logo {
+  --brand-width: 176px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: var(--brand-width);
+  max-width: 100%;
+  flex: 0 0 auto;
+  vertical-align: middle;
+  line-height: 1;
+}
+.bublii-logo img { display: block; height: auto; object-fit: contain; mix-blend-mode: multiply; }
+.bublii-logo__mascot { width: 23%; flex: 0 0 23%; }
+.bublii-logo__wordmark { width: calc(77% - 8px); min-width: 0; }
+.bublii-logo--lg { --brand-width: 224px; }
+.bublii-logo--sm { --brand-width: 132px; }
+.brand-welcome { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.child-home-header { flex-wrap: wrap; }
+.child-home-greeting { min-width: 0; flex-wrap: wrap; justify-content: center; }
+@media (max-width: 480px) {
+  .child-home-brand { order: -1; flex-basis: 100%; text-align: center; }
+  .child-home-greeting { flex: 1 1 0%; gap: 8px; }
+  .child-home-greeting > span { font-size: 1.125rem; overflow-wrap: anywhere; }
+}
+
+/* Respect the child's device preference for calmer visual feedback. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

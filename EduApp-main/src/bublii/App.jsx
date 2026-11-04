@@ -1,12 +1,14 @@
-import React from 'react';
+﻿import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MotionConfig } from 'framer-motion';
 import { BubliiProvider } from './context/BubliiContext';
-import RoleSelector from './components/RoleSelector';
+import LoginScreen from './screens/LoginScreen';
+import LandingPage from './screens/LandingPage';
 import ChildHomeScreen from './screens/ChildHomeScreen';
 import ParentDashboard from './screens/ParentDashboard';
 import SpecialistDashboard from './screens/SpecialistDashboard';
 import ActivityScreen from './screens/ActivityScreen';
+import CalendarScreen from './screens/CalendarScreen';
 
 export default function BubliiApp() {
   const prefersReducedMotion =
@@ -18,8 +20,13 @@ export default function BubliiApp() {
       <MotionConfig reducedMotion={prefersReducedMotion ? 'always' : 'never'}>
         <BrowserRouter>
           <Routes>
+            <Route path=":role/calendrier" element={<CalendarScreen />} />
             {/* 1. Sélecteur de rôle d'entrée */}
-            <Route path="/" element={<RoleSelector />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/connexion" element={<LoginScreen />} />
+            <Route path="/connexion/:role" element={<LoginScreen />} />
+            <Route path="/login" element={<LoginScreen />} />
+            <Route path="/login/:role" element={<LoginScreen />} />
 
             {/* 2. Espace Enfant */}
             <Route path="/enfant" element={<ChildHomeScreen />} />

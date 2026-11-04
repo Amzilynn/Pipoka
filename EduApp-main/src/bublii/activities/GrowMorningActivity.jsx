@@ -3,35 +3,35 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
 import TTSButton from '../components/TTSButton';
 
-// Real situational photos for each morning routine step
+// Local illustrations matched to each action or item
 const MORNING_STEPS = [
   {
     id: 'reveil',
     step: 1,
     title: 'Se réveiller',
     text: 'J\'ouvre les yeux et je m\'étire.',
-    image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=700&q=80',
+    image: '/assets/images/grow/reveil.svg',
   },
   {
     id: 'habillage',
     step: 2,
     title: 'S\'habiller',
     text: 'J\'enfile mon t-shirt et mon pantalon.',
-    image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=700&q=80',
+    image: '/assets/images/grow/habillage.svg',
   },
   {
     id: 'dejeuner',
     step: 3,
     title: 'Petit-déjeuner',
     text: 'Je mange pour prendre des forces.',
-    image: 'https://images.unsplash.com/photo-1517637382994-f02da38c6728?auto=format&fit=crop&w=700&q=80',
+    image: '/assets/images/grow/dejeuner.svg',
   },
   {
     id: 'chaussures',
     step: 4,
     title: 'Mettre ses chaussures',
     text: 'J\'enfile mes chaussures — je suis prêt !',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80',
+    image: '/assets/images/grow/chaussures.svg',
   },
 ];
 

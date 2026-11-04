@@ -8,11 +8,18 @@ function findBestFrenchVoice() {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
   try {
     const voices = window.speechSynthesis.getVoices() || [];
-    return (
-      voices.find((v) => v.lang === 'fr-FR' || v.lang === 'fr_FR') ||
-      voices.find((v) => v.lang.startsWith('fr')) ||
-      null
-    );
+    // Prefer expressive voices over legacy system defaults, regardless of list order.
+    const frenchVoices = voices.filter((voice) => /^fr(?:[-_]|$)/i.test(voice.lang));
+    const score = (voice) => {
+      const name = voice.name || '';
+      let value = /^fr[-_]FR$/i.test(voice.lang) ? 20 : 0;
+      if (/natural|neural|enhanced|premium/i.test(name)) value += 100;
+      if (/google/i.test(name)) value += 60;
+      if (/audrey|amelie|am?lie|denise|vivienne|sylvie/i.test(name)) value += 10;
+      if (/espeak|mbrola|robot|compact/i.test(name)) value -= 40;
+      return value;
+    };
+    return frenchVoices.sort((a, b) => score(b) - score(a))[0] || null;
   } catch {
     return null;
   }
@@ -21,11 +28,9 @@ function findBestFrenchVoice() {
 function initVoices() {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
   cachedVoice = findBestFrenchVoice();
-  if (window.speechSynthesis.onvoiceschanged !== undefined) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      cachedVoice = findBestFrenchVoice();
-    };
-  }
+  window.speechSynthesis.addEventListener('voiceschanged', () => {
+    cachedVoice = findBestFrenchVoice();
+  });
 }
 
 initVoices();
@@ -55,11 +60,12 @@ export function speakText(text, isAudioEnabled = true, onEnd = null) {
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'fr-FR';
-    utterance.rate = 0.82; // Calm, clear cadence for ease of auditory processing
-    utterance.pitch = 1.05;
+    utterance.rate = 0.9; // Gentle pacing without stretching syllables unnaturally
+    utterance.pitch = 1; // Preserve the selected voice's natural intonation
 
     if (cachedVoice) {
       utterance.voice = cachedVoice;
+      utterance.lang = cachedVoice.lang;
     }
 
     utterance.onend = () => {

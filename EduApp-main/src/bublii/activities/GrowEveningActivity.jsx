@@ -3,35 +3,35 @@ import { motion } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
 import TTSButton from '../components/TTSButton';
 
-// Real situational photos for evening routine steps
+// Local illustrations matched to each action or item
 const EVENING_STEPS = [
   {
     id: 'ranger',
     step: 1,
     title: 'Ranger ses jouets',
     text: 'Je range mes jeux.',
-    image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=700&q=80',
+    image: '/assets/images/grow/ranger.svg',
   },
   {
     id: 'pyjama',
     step: 2,
     title: 'Mettre son pyjama',
     text: 'J\'enfile mon pyjama.',
-    image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=700&q=80',
+    image: '/assets/images/grow/pyjama.svg',
   },
   {
     id: 'histoire',
     step: 3,
     title: 'L\'histoire du soir',
     text: 'J\'écoute une histoire calme.',
-    image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=700&q=80',
+    image: '/assets/images/grow/histoire.svg',
   },
   {
     id: 'dodo',
     step: 4,
     title: 'Bonne nuit !',
     text: 'Je ferme les yeux et je m\'endors.',
-    image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=700&q=80',
+    image: '/assets/images/grow/dodo.svg',
   },
 ];
 

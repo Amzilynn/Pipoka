@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
 import TTSButton from '../components/TTSButton';
+import MovementPicture from '../components/MovementPicture';
 
 // Real situational photos — child demonstrating each body part
 const BODY_PARTS = [
@@ -9,28 +10,24 @@ const BODY_PARTS = [
     id: 'head',
     name: 'La Tête',
     instruction: 'Touche le haut de ta tête',
-    image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=600&q=80',
     color: '#2A6FB5',
   },
   {
     id: 'shoulders',
     name: 'Les Épaules',
     instruction: 'Pose tes mains sur tes épaules',
-    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80',
     color: '#22A06B',
   },
   {
     id: 'hands',
     name: 'Les Mains',
     instruction: 'Ouvre grand tes mains',
-    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
     color: '#F5A623',
   },
   {
     id: 'knees',
     name: 'Les Genoux',
     instruction: 'Baisse-toi et touche tes genoux',
-    image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80',
     color: '#E84545',
   },
 ];
@@ -55,7 +52,7 @@ export default function MoveBodyPartsActivity({ childSettings, onComplete }) {
   }, [currentRound, isAudioEnabled, isFinished, currentPart]);
 
   const handleConfirmAction = (partId) => {
-    if (isSuccessRound) return;
+    if (selectedId !== null) return;
     setSelectedId(partId);
 
     if (partId === currentPart.id) {
@@ -147,21 +144,16 @@ export default function MoveBodyPartsActivity({ childSettings, onComplete }) {
         <p className="text-base text-slate-600 font-bold">{currentPart.instruction}</p>
 
         <div className="relative w-full h-52 sm:h-64 rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100">
-          <img
-            src={currentPart.image}
-            alt={currentPart.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+          <MovementPicture pose={currentPart.id} title={currentPart.instruction} bodyPart />
           <AnimatePresence>
             {isSuccessRound && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-emerald-500/90 flex items-center justify-center rounded-2xl"
+                className="absolute bottom-2 right-2 bg-emerald-700 px-3 py-2 rounded-2xl"
               >
-                <span className="font-['Fredoka'] text-5xl font-black text-white">Bravo !</span>
+                <span className="font-['Fredoka'] text-xl font-black text-white">Bravo !</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -181,7 +173,7 @@ export default function MoveBodyPartsActivity({ childSettings, onComplete }) {
               type="button"
               whileTap={{ scale: 0.95 }}
               onClick={() => handleConfirmAction(part.id)}
-              disabled={isSuccessRound}
+              disabled={selectedId !== null}
               className={`min-h-[100px] rounded-2xl p-3 flex flex-col items-center justify-center gap-2 cursor-pointer border-3 transition-all ${
                 isCorrectSelected
                   ? 'bg-emerald-50 border-[#22a06b] shadow-md'
@@ -190,8 +182,8 @@ export default function MoveBodyPartsActivity({ childSettings, onComplete }) {
                   : 'bg-white border-slate-200 hover:border-[#22a06b] hover:bg-emerald-50/30 shadow-xs'
               }`}
             >
-              <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-slate-200">
-                <img src={part.image} alt={part.name} className="w-full h-full object-cover" loading="lazy" />
+              <div className="w-full h-28 sm:h-32 rounded-xl overflow-hidden border-2 border-slate-200">
+                <MovementPicture pose={part.id} title={part.name} bodyPart />
               </div>
               <span className="font-['Fredoka'] text-sm font-bold text-slate-800 text-center leading-tight">
                 {part.name}

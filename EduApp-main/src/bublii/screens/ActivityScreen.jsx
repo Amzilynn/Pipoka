@@ -1,47 +1,61 @@
-import React from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useBublii } from '../context/BubliiContext';
-import { MODULE_DEFINITIONS } from './ChildHomeScreen';
-import TTSButton from '../components/TTSButton';
+import React from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useBublii } from "../context/BubliiContext";
+import { MODULE_DEFINITIONS } from "./ChildHomeScreen";
+import TTSButton from "../components/TTSButton";
+import ActivityIllustration from "../components/ActivityIllustration";
 
 // 1. APPRENDRE Activities
-import LearnActivity from '../activities/LearnActivity';
-import LearnWordBuilderActivity from '../activities/LearnWordBuilderActivity';
-import LearnCountingActivity from '../activities/LearnCountingActivity';
-import LearnProblemSolvingActivity from '../activities/LearnProblemSolvingActivity';
+import LearnActivity from "../activities/LearnActivity";
+import LearnWordBuilderActivity from "../activities/LearnWordBuilderActivity";
+import LearnCountingActivity from "../activities/LearnCountingActivity";
+import LearnProblemSolvingActivity from "../activities/LearnProblemSolvingActivity";
 
 // 2. COMMUNIQUER Activities
-import CommunicateActivity from '../activities/CommunicateActivity';
-import CommunicateNeedsActivity from '../activities/CommunicateNeedsActivity';
-import CommunicateSentenceActivity from '../activities/CommunicateSentenceActivity';
-import CommunicateSocialActivity from '../activities/CommunicateSocialActivity';
+import CommunicateActivity from "../activities/CommunicateActivity";
+import CommunicateNeedsActivity from "../activities/CommunicateNeedsActivity";
+import CommunicateSentenceActivity from "../activities/CommunicateSentenceActivity";
+import CommunicateSocialActivity from "../activities/CommunicateSocialActivity";
 
 // 3. BOUGER Activities
-import MoveCameraActivity from '../activities/MoveCameraActivity';
-import MoveDirectionActivity from '../activities/MoveDirectionActivity';
-import MoveSequenceActivity from '../activities/MoveSequenceActivity';
-import MoveBodyPartsActivity from '../activities/MoveBodyPartsActivity';
+import MoveCameraActivity from "../activities/MoveCameraActivity";
+import MoveDirectionActivity from "../activities/MoveDirectionActivity";
+import MoveSequenceActivity from "../activities/MoveSequenceActivity";
+import MoveBodyPartsActivity from "../activities/MoveBodyPartsActivity";
 
 // 4. GRANDIR Activities
-import GrowRoutineActivity from '../activities/GrowRoutineActivity';
-import GrowMorningActivity from '../activities/GrowMorningActivity';
-import GrowSchoolBagActivity from '../activities/GrowSchoolBagActivity';
-import GrowEveningActivity from '../activities/GrowEveningActivity';
+import GrowRoutineActivity from "../activities/GrowRoutineActivity";
+import GrowMorningActivity from "../activities/GrowMorningActivity";
+import GrowSchoolBagActivity from "../activities/GrowSchoolBagActivity";
+import GrowEveningActivity from "../activities/GrowEveningActivity";
 
 export default function ActivityScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { activeChild, recordActivityCompletion } = useBublii();
 
-  const moduleId = searchParams.get('module') || 'learn';
-  const activityId = searchParams.get('activity') || 'associer-mots-images';
+  const moduleId = searchParams.get("module") || "learn";
+  const activityId = searchParams.get("activity");
 
-  const currentModule = MODULE_DEFINITIONS.find((m) => m.id === moduleId) || MODULE_DEFINITIONS[0];
+  const currentModule =
+    MODULE_DEFINITIONS.find((m) => m.id === moduleId) || MODULE_DEFINITIONS[0];
   const currentActivity =
-    currentModule.activities.find((a) => a.id === activityId) || currentModule.activities[0];
+    currentModule.activities.find((a) => a.id === activityId) ||
+    currentModule.activities[0];
+  const showModuleOverview = !activityId;
 
   const handleBackToChildHome = () => {
-    navigate('/enfant');
+    navigate("/enfant");
+  };
+
+  const handleBackToModule = () => {
+    navigate(`/enfant/activite?module=${currentModule.id}`);
+  };
+
+  const handleSelectActivity = (nextActivityId) => {
+    navigate(
+      `/enfant/activite?module=${currentModule.id}&activity=${nextActivityId}`,
+    );
   };
 
   const handleActivityComplete = ({ score, maxScore, label, module }) => {
@@ -49,61 +63,195 @@ export default function ActivityScreen() {
       activityId: currentActivity.id,
       module: module || currentModule.id,
       label: label || currentActivity.title,
-      score: score || 3,
-      maxScore: maxScore || 3,
+      score: score ?? 3,
+      maxScore: maxScore ?? 3,
     });
-    navigate('/enfant');
+    navigate(`/enfant/activite?module=${currentModule.id}`);
   };
 
-  // Exact 1-to-1 mapping for each of the 16 activities
+  const renderModuleOverview = () => (
+    <div className="w-full max-w-4xl mx-auto flex flex-col gap-5 py-6">
+      <div className="text-center mb-3">
+        <p className="font-['Fredoka'] text-sm uppercase tracking-[0.2em] font-black text-slate-500">
+          Module {currentModule.title}
+        </p>
+        <h2 className="font-['Fredoka'] text-3xl sm:text-4xl font-black text-slate-800 mt-2">
+          Choisis une activité
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {currentModule.activities.map((activity) => (
+          <button
+            key={activity.id}
+            type="button"
+            onClick={() => handleSelectActivity(activity.id)}
+            className="group overflow-hidden rounded-[1.5rem] border-2 border-slate-200 bg-white text-left shadow-[0_4px_0_rgba(15,23,42,0.04)] transition-all active:scale-[0.99] hover:border-slate-300"
+          >
+            <div className="relative h-44 w-full overflow-hidden">
+              <ActivityIllustration activity={activity.id} title={activity.title} background={currentModule.colorBg} />
+            </div>
+
+            <div className="px-4 py-3">
+              <p className="font-['Fredoka'] text-xl font-black text-slate-800 leading-none">
+                {activity.title}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   const renderActivityComponent = () => {
     switch (activityId) {
-      // APPRENDRE (4)
-      case 'associer-mots-images':
-        return <LearnActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'construire-le-mot':
-        return <LearnWordBuilderActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'compter-des-objets':
-        return <LearnCountingActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'problemes-simples':
-        return <LearnProblemSolvingActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
+      case "associer-mots-images":
+        return (
+          <LearnActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "construire-le-mot":
+        return (
+          <LearnWordBuilderActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "compter-des-objets":
+        return (
+          <LearnCountingActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "problemes-simples":
+        return (
+          <LearnProblemSolvingActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
 
       // COMMUNIQUER (4)
-      case 'reconnaitre-les-emotions':
-        return <CommunicateActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'exprimer-ses-besoins':
-        return <CommunicateNeedsActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'construire-une-phrase':
-        return <CommunicateSentenceActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'situations-sociales':
-        return <CommunicateSocialActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
+      case "reconnaitre-les-emotions":
+        return (
+          <CommunicateActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "exprimer-ses-besoins":
+        return (
+          <CommunicateNeedsActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "construire-une-phrase":
+        return (
+          <CommunicateSentenceActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "situations-sociales":
+        return (
+          <CommunicateSocialActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
 
       // BOUGER (4)
-      case 'imiter-le-mouvement':
-        return <MoveCameraActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'gauche-droite-haut-bas':
-        return <MoveDirectionActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'sequences-de-mouvement':
-        return <MoveSequenceActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'identifier-parties-corps':
-        return <MoveBodyPartsActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
+      case "imiter-le-mouvement":
+        return (
+          <MoveCameraActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "gauche-droite-haut-bas":
+        return (
+          <MoveDirectionActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "sequences-de-mouvement":
+        return (
+          <MoveSequenceActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "identifier-parties-corps":
+        return (
+          <MoveBodyPartsActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
 
       // GRANDIR (4)
-      case 'dents-propres':
-        return <GrowRoutineActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'ordre-du-matin':
-        return <GrowMorningActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'sac-de-ecole':
-        return <GrowSchoolBagActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-      case 'routine-du-soir':
-        return <GrowEveningActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
+      case "dents-propres":
+        return (
+          <GrowRoutineActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "ordre-du-matin":
+        return (
+          <GrowMorningActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "sac-de-ecole":
+        return (
+          <GrowSchoolBagActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
+      case "routine-du-soir":
+        return (
+          <GrowEveningActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
 
       default:
-        // Default module fallback if an unknown id is passed
-        if (moduleId === 'learn') return <LearnActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-        if (moduleId === 'communicate') return <CommunicateActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-        if (moduleId === 'move') return <MoveCameraActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
-        return <GrowRoutineActivity childSettings={activeChild.settings} onComplete={handleActivityComplete} />;
+        if (moduleId === "learn")
+          return (
+            <LearnActivity
+              childSettings={activeChild.settings}
+              onComplete={handleActivityComplete}
+            />
+          );
+        if (moduleId === "communicate")
+          return (
+            <CommunicateActivity
+              childSettings={activeChild.settings}
+              onComplete={handleActivityComplete}
+            />
+          );
+        if (moduleId === "move")
+          return (
+            <MoveCameraActivity
+              childSettings={activeChild.settings}
+              onComplete={handleActivityComplete}
+            />
+          );
+        return (
+          <GrowRoutineActivity
+            childSettings={activeChild.settings}
+            onComplete={handleActivityComplete}
+          />
+        );
     }
   };
 
@@ -117,7 +265,7 @@ export default function ActivityScreen() {
           className="min-h-[56px] flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-base font-extrabold text-[#1E293B] hover:text-black bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 transition-all cursor-pointer shadow-xs active:scale-95"
           aria-label="Retour à l'accueil des activités"
         >
-          <span className="text-2xl">🏠</span>
+          <span className="text-2xl">←</span>
           <span className="font-['Fredoka'] text-lg font-bold">Accueil</span>
         </button>
 
@@ -132,12 +280,16 @@ export default function ActivityScreen() {
               className="font-['Fredoka'] text-base sm:text-xl font-black uppercase tracking-wider"
               style={{ color: currentModule.color }}
             >
-              {currentModule.title} : {currentActivity.title}
+              {showModuleOverview
+                ? currentModule.title
+                : `${currentModule.title} : ${currentActivity.title}`}
             </span>
-            <TTSButton
-              text={`${currentModule.title} : ${currentActivity.title}`}
-              size="sm"
-            />
+            {!showModuleOverview && (
+              <TTSButton
+                text={`${currentModule.title} : ${currentActivity.title}`}
+                size="sm"
+              />
+            )}
           </div>
         </div>
 
@@ -157,12 +309,18 @@ export default function ActivityScreen() {
 
       {/* Main Activity Stage */}
       <main className="max-w-4xl mx-auto w-full p-4 sm:p-8 flex-1 flex flex-col justify-center">
-        {renderActivityComponent()}
+        {showModuleOverview
+          ? renderModuleOverview()
+          : renderActivityComponent()}
       </main>
 
       {/* Bottom Footer */}
       <footer className="text-center py-4 text-xs font-bold text-[#64748B]">
-        Booblii • {currentModule.title} • {currentActivity.title} • {activeChild.firstName}
+        Booblii •{" "}
+        {showModuleOverview
+          ? currentModule.title
+          : `${currentModule.title} • ${currentActivity.title} `}{" "}
+        • {activeChild.firstName}
       </footer>
     </div>
   );

@@ -1,29 +1,31 @@
 // MediaPipe Pose Landmarker Integration for Bublii
 // Provides real-time 33-point skeletal landmark detection running locally in WebAssembly
 
-let isMediaPipeLoading = false;
 let mediaPipeReadyPromise = null;
 
 export function waitForMediaPipePose() {
-  if (typeof window === 'undefined') return Promise.resolve(null);
+  if (typeof window === 'undefined') return Promise.reject(new Error('Browser required'));
   if (window.Pose) return Promise.resolve(window.Pose);
-
   if (mediaPipeReadyPromise) return mediaPipeReadyPromise;
-
-  mediaPipeReadyPromise = new Promise((resolve) => {
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (window.Pose) {
-        clearInterval(interval);
-        resolve(window.Pose);
-      } else if (attempts > 50) { // 10 seconds timeout
-        clearInterval(interval);
-        resolve(null);
-      }
-    }, 200);
+  mediaPipeReadyPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '/assets/mediapipe/pose/pose.js';
+    script.async = true;
+    const timer = setTimeout(() => fail(), 20000);
+    const fail = () => {
+      clearTimeout(timer);
+      script.remove();
+      mediaPipeReadyPromise = null;
+      reject(new Error('Pose runtime unavailable'));
+    };
+    script.onerror = fail;
+    script.onload = () => {
+      clearTimeout(timer);
+      if (window.Pose) resolve(window.Pose);
+      else fail();
+    };
+    document.head.appendChild(script);
   });
-
   return mediaPipeReadyPromise;
 }
 
@@ -40,11 +42,11 @@ export async function createPoseDetector(onResultsCallback) {
 
   try {
     const pose = new PoseClass({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+      locateFile: (file) => `/assets/mediapipe/pose/${file}`,
     });
 
     pose.setOptions({
-      modelComplexity: 1, // Balanced speed and accuracy
+      modelComplexity: 0, // Balanced speed and accuracy
       smoothLandmarks: true,
       enableSegmentation: false,
       minDetectionConfidence: 0.55,

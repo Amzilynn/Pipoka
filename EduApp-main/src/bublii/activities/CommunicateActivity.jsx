@@ -2,34 +2,31 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
 import TTSButton from '../components/TTSButton';
+import { EmotionPortrait } from '../components/CommunicationScenes';
 
-// Real photography of children expressing emotions — NO EMOJIS
+// Each portrait shows the facial features described in the prompt.
 const EMOTION_SCENARIOS = [
   {
     id: 'sc-joie',
     emotion: 'La Joie',
-    image: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=600&q=80',
     audioText: 'L’enfant sourit et rit aux éclats !',
     hint: 'Regarde son beau sourire éclatant !',
   },
   {
     id: 'sc-tristesse',
     emotion: 'La Tristesse',
-    image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
     audioText: 'L’enfant a du chagrin et se sent triste.',
-    hint: 'Il a la tête baissée et a besoin d’un câlin.',
+    hint: 'Sa bouche est tournée vers le bas. Une larme coule sur sa joue.',
   },
   {
     id: 'sc-surprise',
     emotion: 'La Surprise',
-    image: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80',
     audioText: 'L’enfant ouvre de grands yeux étonnés !',
     hint: 'Ses yeux sont tout ronds !',
   },
   {
     id: 'sc-calme',
     emotion: 'Le Calme',
-    image: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=600&q=80',
     audioText: 'L’enfant est détendu et serein.',
     hint: 'Son visage est reposé et tranquille.',
   },
@@ -202,11 +199,7 @@ export default function CommunicateActivity({ childSettings, onComplete }) {
       {/* Real Child Portrait (No Emojis) */}
       <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 text-center border-4 border-[#E84545]/30 shadow-md">
         <div className="w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-3xl overflow-hidden shadow-lg border-4 border-white mb-4 bg-slate-100">
-          <img
-            src={currentScenario.image}
-            alt={currentScenario.emotion}
-            className="w-full h-full object-cover"
-          />
+          <EmotionPortrait emotion={currentScenario.id} description={currentScenario.audioText} />
         </div>
 
         <div className="flex items-center justify-center gap-3">
