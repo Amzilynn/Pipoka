@@ -49,8 +49,8 @@ export default function ActivityScreen() {
       activityId: currentActivity.id,
       module: module || currentModule.id,
       label: label || currentActivity.title,
-      score: score || 3,
-      maxScore: maxScore || 3,
+      score: score ?? 3,
+      maxScore: maxScore ?? 3,
     });
     navigate('/enfant');
   };

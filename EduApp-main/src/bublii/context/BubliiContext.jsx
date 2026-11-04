@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { appendCompletion, migrateProfiles, readSavedProfiles, PROFILES_STORAGE_KEY } from '../data/progress';
 
 // ============================================================================
 // BUBLII UNIFIED CONTEXT
 // Single source of truth for child profiles, active settings, session progress,
-// and current user role. All state is local and reactive, synced with sessionStorage.
+// and current user role. Profiles persist locally; role remains per tab.
 // ============================================================================
 
 export const INITIAL_CHILD_PROFILES = [
@@ -139,7 +140,7 @@ export function BubliiProvider({ children }) {
   // 2. Selected child ID
   const [selectedChildId, setSelectedChildId] = useState(() => {
     try {
-      return sessionStorage.getItem('bubliiChildId') || 'lea';
+      return localStorage.getItem('bubliiChildId') || sessionStorage.getItem('bubliiChildId') || 'lea';
     } catch {
       return 'lea';
     }
@@ -148,10 +149,12 @@ export function BubliiProvider({ children }) {
   // 3. Child profiles with settings and progress
   const [profiles, setProfiles] = useState(() => {
     try {
-      const stored = sessionStorage.getItem('bubliiProfiles');
-      return stored ? JSON.parse(stored) : INITIAL_CHILD_PROFILES;
+      const saved = readSavedProfiles(localStorage) || readSavedProfiles(sessionStorage);
+      if (saved) return saved;
+      const legacy = sessionStorage.getItem('bubliiProfiles');
+      return migrateProfiles(INITIAL_CHILD_PROFILES, legacy ? JSON.parse(legacy) : null);
     } catch {
-      return INITIAL_CHILD_PROFILES;
+      return migrateProfiles(INITIAL_CHILD_PROFILES, null);
     }
   });
 
@@ -171,6 +174,7 @@ export function BubliiProvider({ children }) {
   useEffect(() => {
     try {
       sessionStorage.setItem('bubliiChildId', selectedChildId);
+      localStorage.setItem('bubliiChildId', selectedChildId);
     } catch {
       // ignore
     }
@@ -178,9 +182,9 @@ export function BubliiProvider({ children }) {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('bubliiProfiles', JSON.stringify(profiles));
+      localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles));
     } catch {
-      // ignore
+      try { sessionStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles)); } catch { /* In-memory fallback. */ }
     }
   }, [profiles]);
 
@@ -217,32 +221,7 @@ export function BubliiProvider({ children }) {
     setProfiles((prev) =>
       prev.map((p) => {
         if (p.id === childId) {
-          const mod = p.moduleProgress[module] || { completedCount: 0, totalActivities: 4, stars: 0 };
-          const updatedModule = {
-            ...mod,
-            completedCount: Math.min(mod.totalActivities, mod.completedCount + 1),
-            stars: mod.stars + score,
-            lastActivity: label,
-          };
-
-          const newHistoryItem = {
-            id: `h-${Date.now()}`,
-            activityId,
-            module,
-            label,
-            date: 'À l’instant',
-            score,
-            maxScore,
-          };
-
-          return {
-            ...p,
-            moduleProgress: {
-              ...p.moduleProgress,
-              [module]: updatedModule,
-            },
-            history: [newHistoryItem, ...(p.history || []).slice(0, 9)],
-          };
+          return appendCompletion(p, { activityId, module, label, score, maxScore });
         }
         return p;
       })
@@ -251,11 +230,14 @@ export function BubliiProvider({ children }) {
 
   // Action: Reset profiles to default demo state
   const resetAllData = () => {
-    setProfiles(INITIAL_CHILD_PROFILES);
+    setProfiles(migrateProfiles(INITIAL_CHILD_PROFILES, null));
     setSelectedChildId('lea');
     try {
       sessionStorage.removeItem('bubliiProfiles');
       sessionStorage.removeItem('bubliiChildId');
+      sessionStorage.removeItem(PROFILES_STORAGE_KEY);
+      localStorage.removeItem(PROFILES_STORAGE_KEY);
+      localStorage.removeItem('bubliiChildId');
     } catch {
       // ignore
     }

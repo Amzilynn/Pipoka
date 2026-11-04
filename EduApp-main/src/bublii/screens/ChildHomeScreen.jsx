@@ -170,6 +170,16 @@ export default function ChildHomeScreen() {
                     </div>
                   </div>
 
+                  <div className="mb-5" aria-label={`Parcours ${mod.title}`}>
+                    <p className="text-base font-bold mb-2" style={{ color: mod.colorDark }}>
+                      {progress.completedCount || 0} / {mod.activities.length} jeux découverts
+                    </p>
+                    <div className="h-3 rounded-full overflow-hidden" style={{ background: mod.colorBg }} role="progressbar" aria-label={`${mod.title} : jeux découverts`} aria-valuemin={0} aria-valuemax={mod.activities.length} aria-valuenow={progress.completedCount || 0}>
+                      <div className="h-full rounded-full" style={{ width: `${(progress.completedCount || 0) / mod.activities.length * 100}%`, background: mod.color }} />
+                    </div>
+                    <p className="text-sm mt-2 text-slate-600">Tu peux rejouer autant que tu veux !</p>
+                  </div>
+
                   {/* 4 Large Clean Activity Buttons */}
                   <div className="grid grid-cols-2 gap-3.5 mb-6">
                     {mod.activities.map((act) => (
