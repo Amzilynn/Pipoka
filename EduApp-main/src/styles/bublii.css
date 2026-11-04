@@ -1,0 +1,168 @@
+/* Bublii design system — entry point with Tailwind directives */
+
+/* =========================================================
+   BUBLII — Core Design Tokens (Specialized for Trisomy 21 / Down Syndrome)
+   Age-respectful (5–15 ans), tactile ergonomics, French audio-first
+   ========================================================= */
+
+:root {
+  --font-display: 'Fredoka', 'Nunito', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Nunito', ui-sans-serif, system-ui, sans-serif;
+
+  /* Signature Module Colors */
+  --module-learn: #2A6FB5;        /* Bleu Découverte */
+  --module-learn-dark: #1B4C7E;
+  --module-communicate: #E84545;  /* Corail Expression */
+  --module-communicate-dark: #A82525;
+  --module-move: #22A06B;         /* Menthe Émeraude */
+  --module-move-dark: #146844;
+  --module-grow: #F5A623;         /* Ambre Quotidien */
+  --module-grow-dark: #B5740C;
+
+  /* Neutrals & Canvas */
+  --ink: #1E293B;                 /* Ardoise sombre — haute lisibilité */
+  --ink-soft: #64748B;            /* Gris doux */
+  --muted: #94A3B8;               /* Gris tertiaire */
+  --canvas: #FAF7F2;              /* Crème doux apaisant */
+  --card: #FFFFFF;
+
+  --line: #E2E8F0;
+  --line-strong: #CBD5E1;
+
+  --touch-target-min: 56px;       /* Ergonomie motrice T21 */
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================
+   Bublii — Custom Tactile Classes & Visual Atmosphere
+   ========================================================= */
+
+/* Warm, gentle background without glare */
+.bublii-bg-canvas {
+  background-color: #FAF7F2;
+  background-image: 
+    radial-gradient(circle at 12% 18%, rgba(42, 111, 177, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 88% 20%, rgba(232, 69, 69, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 15% 82%, rgba(34, 160, 107, 0.07) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(245, 166, 35, 0.07) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* 3D Tactile Buttons — Essential for children with motor hypotonia */
+.btn-tactile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 14px 28px;
+  border-radius: 24px;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease;
+  user-select: none;
+  position: relative;
+}
+
+.btn-tactile:hover {
+  transform: translateY(-2px);
+}
+
+.btn-tactile:active {
+  transform: translateY(3px) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2) !important;
+}
+
+.btn-tactile--learn {
+  background: #2A6FB5;
+  color: #FFFFFF;
+  box-shadow: 0 6px 0 #1B4C7E, 0 12px 24px -6px rgba(42, 111, 177, 0.45);
+}
+
+.btn-tactile--communicate {
+  background: #E84545;
+  color: #FFFFFF;
+  box-shadow: 0 6px 0 #A82525, 0 12px 24px -6px rgba(232, 69, 69, 0.45);
+}
+
+.btn-tactile--move {
+  background: #22A06B;
+  color: #FFFFFF;
+  box-shadow: 0 6px 0 #146844, 0 12px 24px -6px rgba(34, 160, 107, 0.45);
+}
+
+.btn-tactile--grow {
+  background: #F5A623;
+  color: #1E293B;
+  box-shadow: 0 6px 0 #B5740C, 0 12px 24px -6px rgba(245, 166, 35, 0.45);
+}
+
+.btn-tactile--white {
+  background: #FFFFFF;
+  color: #1E293B;
+  border: 2px solid #CBD5E1;
+  box-shadow: 0 5px 0 #94A3B8, 0 10px 20px -5px rgba(0,0,0,0.06);
+}
+
+.btn-tactile--white:hover {
+  border-color: #64748B;
+}
+
+/* Tactile Choice Cards (for matching & quiz activities) */
+.card-choice {
+  background: #FFFFFF;
+  border: 3px solid #E2E8F0;
+  border-radius: 28px;
+  box-shadow: 0 6px 0 #CBD5E1, 0 12px 20px -6px rgba(0,0,0,0.05);
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+  cursor: pointer;
+  user-select: none;
+  min-height: 84px;
+}
+
+.card-choice:hover {
+  transform: translateY(-3px);
+  border-color: #2A6FB5;
+  box-shadow: 0 9px 0 #CBD5E1, 0 16px 28px -8px rgba(42, 111, 177, 0.15);
+}
+
+.card-choice:active {
+  transform: translateY(3px) !important;
+  box-shadow: 0 2px 0 #CBD5E1 !important;
+}
+
+.card-choice--correct {
+  background: #ECFDF5 !important;
+  border-color: #10B981 !important;
+  color: #065F46 !important;
+  box-shadow: 0 6px 0 #059669 !important;
+}
+
+.card-choice--error {
+  background: #FEF2F2 !important;
+  border-color: #F87171 !important;
+  color: #991B1B !important;
+  box-shadow: 0 6px 0 #DC2626 !important;
+}
+
+/* Friendly short bounce animation */
+@keyframes bounceShort {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-bounce-short {
+  animation: bounceShort 2s infinite ease-in-out;
+}
+
+/* Focus indicator for keyboard/accessibility */
+:focus-visible {
+  outline: 4px solid #2A6FB5;
+  outline-offset: 3px;
+}
