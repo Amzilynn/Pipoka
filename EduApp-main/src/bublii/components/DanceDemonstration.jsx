@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 const REST = ['M110 104 Q87 135 91 163', 'M190 104 Q213 135 209 163'];
@@ -8,11 +8,17 @@ const POSES = {
   clap: ['M110 104 Q98 142 146 126', 'M190 104 Q202 142 154 126', [146,126], [154,126]],
 };
 
-export default function DanceDemonstration({ gesture, still }) {
+export default function DanceDemonstration({ gesture, still, onComplete }) {
   const reduced = useReducedMotion();
   const pose = POSES[gesture] || POSES.arms;
   const animate = !reduced && !still;
-  const transition = { duration: 4.8, times: [0, 0.22, 0.46, 0.82, 1], repeat: Infinity, ease: 'easeInOut' };
+  // With reduced motion, leave time to observe the pose before the child's turn.
+  useEffect(() => {
+    if (animate || !onComplete) return;
+    const timer = setTimeout(onComplete, 3200);
+    return () => clearTimeout(timer);
+  }, [animate, onComplete]);
+  const transition = { duration: 3.2, times: [0, 0.2, 0.7, 1], ease: 'easeInOut' };
   return <svg viewBox="0 0 300 280" role="img" aria-label="Modèle du mouvement à imiter" className="h-full w-full">
     <ellipse cx="150" cy="263" rx="65" ry="7" fill="#D7E7DF" />
     <path d="M136 174 L129 218 L124 252 M164 174 L171 218 L176 252" stroke="#6275A0" strokeWidth="19" strokeLinecap="round" fill="none" />
@@ -23,8 +29,8 @@ export default function DanceDemonstration({ gesture, still }) {
     <circle cx="139" cy="59" r="3" fill="#303C49" /><circle cx="161" cy="59" r="3" fill="#303C49" />
     <path d="M139 72 Q150 83 161 72" stroke="#694B42" strokeWidth="3" fill="none" strokeLinecap="round" />
     {[0,1].map(i => <React.Fragment key={`${gesture}-${i}`}>
-      <motion.path d={pose[i]} initial={false} animate={{ d: animate ? [REST[i], REST[i], pose[i], pose[i], REST[i]] : pose[i] }} transition={transition} fill="none" stroke="#F3C7A5" strokeWidth="14" strokeLinecap="round" />
-      <motion.circle r="9" fill="#F3C7A5" initial={false} animate={{ cx: animate ? [i ? 209 : 91, i ? 209 : 91, pose[i+2][0], pose[i+2][0], i ? 209 : 91] : pose[i+2][0], cy: animate ? [163,163,pose[i+2][1],pose[i+2][1],163] : pose[i+2][1] }} transition={transition} />
+      <motion.path d={pose[i]} initial={animate ? { d: REST[i] } : false} animate={{ d: animate ? [REST[i], REST[i], pose[i], pose[i]] : pose[i] }} transition={transition} onAnimationComplete={animate && i === 0 ? onComplete : undefined} fill="none" stroke="#F3C7A5" strokeWidth="14" strokeLinecap="round" />
+      <motion.circle r="9" fill="#F3C7A5" initial={animate ? { cx: i ? 209 : 91, cy: 163 } : false} animate={{ cx: animate ? [i ? 209 : 91, i ? 209 : 91, pose[i+2][0], pose[i+2][0]] : pose[i+2][0], cy: animate ? [163,163,pose[i+2][1],pose[i+2][1]] : pose[i+2][1] }} transition={transition} />
     </React.Fragment>)}
   </svg>;
 }

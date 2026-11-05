@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import CalendarShortcut from '../components/CalendarShortcut';
 import { useBublii } from '../context/BubliiContext';
 
 export default function ParentDashboard() {
@@ -66,6 +67,8 @@ export default function ParentDashboard() {
             </h1>
           </div>
 
+          <div className="dashboard-header-actions">
+            <CalendarShortcut role="parent" compact />
           <button
             type="button"
             onClick={() => {
@@ -76,12 +79,12 @@ export default function ParentDashboard() {
           >
             Tester l'espace enfant →
           </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 space-y-8">
-        <button type="button" onClick={() => navigate('/parent/calendrier')} className="mb-6 w-full rounded-2xl border-2 border-blue-200 bg-white p-5 text-left font-bold text-blue-800 shadow-sm hover:bg-blue-50">Mon calendrier · Tâches et étapes en photos →</button>
         {/* Child Profile Switcher & Identity Card */}
         <section className="bg-white rounded-3xl p-6 sm:p-8 border border-[#D1D5DB] shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">

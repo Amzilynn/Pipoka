@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
 import TTSButton from '../components/TTSButton';
+import { useBublii } from '../context/BubliiContext';
+import { createCountingRound, readCountingProgress, freshCountingProgress, saveCountingProgress, recordCountingAttempt } from '../utils/countingProgress';
 
 // Real photographic counting objects — NO EMOJIS
 const COUNTING_ROUNDS = [
@@ -10,27 +12,40 @@ const COUNTING_ROUNDS = [
     item: 'pommes',
     singular: 'Une pomme',
     image: '/assets/images/counting/single-apple.jpg',
-    count: 3,
   },
   {
     id: 'balls',
     item: 'ballons',
     singular: 'Un ballon',
     image: '/assets/images/counting/single-ball.jpg',
-    count: 4,
   },
   {
     id: 'cats',
     item: 'chats',
     singular: 'Un chat',
     image: '/assets/images/counting/single-cat.jpg',
-    count: 2,
   },
 ];
 
 export default function LearnCountingActivity({ childSettings, onComplete }) {
   const isAudioEnabled = childSettings?.audio !== false;
-  const answerChoicesCount = childSettings?.answerChoices || 3;
+  const { activeChild } = useBublii();
+  const childId = activeChild.id;
+  const [progress] = useState(() => {
+    try { return readCountingProgress(window.localStorage, childId); }
+    catch { return freshCountingProgress(); }
+  });
+  const progressRef = useRef(progress);
+  const sessionId = useRef(null);
+  if (!sessionId.current) sessionId.current = globalThis.crypto?.randomUUID?.() || String(Date.now()) + '-' + Math.random();
+  const pendingTimer = useRef(null);
+  const answerLocked = useRef(false);
+  const [round, setRound] = useState(() => createCountingRound(progress.level));
+  const [roundErrors, setRoundErrors] = useState(0);
+  const [helpUsed, setHelpUsed] = useState(false);
+  const [showExample, setShowExample] = useState(false);
+  const [storageAvailable, setStorageAvailable] = useState(true);
+  useEffect(() => () => clearTimeout(pendingTimer.current), []);
 
   const [currentRound, setCurrentRound] = useState(0);
   const [countedIndices, setCountedIndices] = useState(new Set());
@@ -38,26 +53,15 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
   const [isCorrect, setIsCorrect] = useState(null);
   const [isFinished, setIsFinished] = useState(false);
 
-  const currentItem = COUNTING_ROUNDS[currentRound] || COUNTING_ROUNDS[0];
-
-  // Options dynamically adapted to childSettings.answerChoices
-  const options = useMemo(() => {
-    const correct = currentItem.count;
-    const candidates = [1, 2, 3, 4, 5].filter((n) => n !== correct);
-    const shuffled = candidates.sort(() => 0.5 - Math.random());
-    const distractors = shuffled.slice(0, answerChoicesCount - 1);
-    return [correct, ...distractors].sort((a, b) => a - b);
-  }, [currentItem, answerChoicesCount]);
+  const currentItem = useMemo(() => ({ ...(COUNTING_ROUNDS[currentRound] || COUNTING_ROUNDS[0]), count: round.count }), [currentRound, round.count]);
+  const options = round.options;
 
   useEffect(() => {
-    setCountedIndices(new Set());
-    setSelectedNumber(null);
-    setIsCorrect(null);
     if (isAudioEnabled && !isFinished) {
       speakText(`Combien y a-t-il de ${currentItem.item} ? Touche chaque objet pour compter.`, isAudioEnabled);
     }
     return () => stopSpeech();
-  }, [currentRound, isAudioEnabled, isFinished, currentItem]);
+  }, [currentItem, isAudioEnabled, isFinished]);
 
   const handleTapObject = (index) => {
     const nextSet = new Set(countedIndices);
@@ -70,26 +74,62 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
     }
   };
 
+  const handleShowExample = () => {
+    setHelpUsed(true);
+    setShowExample(true);
+    speakText(Array.from({ length: currentItem.count }, (_, i) => i + 1).join(', ') + '. Il y en a ' + currentItem.count + '.', isAudioEnabled);
+  };
+
   const handleSelectNumber = (num) => {
-    if (selectedNumber !== null) return;
+    if (answerLocked.current) return;
+    answerLocked.current = true;
     setSelectedNumber(num);
     const correct = num === currentItem.count;
     setIsCorrect(correct);
+    const next = recordCountingAttempt(progressRef.current, {
+      sessionId: sessionId.current,
+      round: currentRound + 1,
+      level: round.level,
+      target: currentItem.count,
+      answer: num,
+      correct,
+      helpUsed,
+      hadError: roundErrors > 0,
+      objectsTapped: countedIndices.size,
+      recordedAt: new Date().toISOString(),
+    });
+    progressRef.current = next;
+    try { setStorageAvailable(saveCountingProgress(window.localStorage, childId, next)); }
+    catch { setStorageAvailable(false); }
 
     if (correct) {
-      speakText(`Bravo ! Il y en a bien ${currentItem.count} !`, isAudioEnabled);
-      setTimeout(() => {
+      speakText('Bravo ! Il y en a bien ' + currentItem.count + ' !', isAudioEnabled);
+      pendingTimer.current = setTimeout(() => {
         if (currentRound + 1 < COUNTING_ROUNDS.length) {
-          setCurrentRound((r) => r + 1);
+          setRound(createCountingRound(next.level));
+          setRoundErrors(0);
+          setHelpUsed(false);
+          setShowExample(false);
+          setCountedIndices(new Set());
+          setSelectedNumber(null);
+          setIsCorrect(null);
+          answerLocked.current = false;
+          setCurrentRound(r => r + 1);
         } else {
           setIsFinished(true);
         }
       }, 1500);
     } else {
-      speakText(`Essaie encore, recompte doucement !`, isAudioEnabled);
-      setTimeout(() => {
+      setRoundErrors(errors => errors + 1);
+      if (roundErrors + 1 >= 2) {
+        handleShowExample();
+      } else {
+        speakText('Essaie encore, recompte doucement !', isAudioEnabled);
+      }
+      pendingTimer.current = setTimeout(() => {
         setSelectedNumber(null);
         setIsCorrect(null);
+        answerLocked.current = false;
       }, 1200);
     }
   };
@@ -140,8 +180,9 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {!storageAvailable && <p role="status" className="rounded-2xl bg-white p-4 text-slate-700">Tu peux continuer à jouer. La sauvegarde est indisponible sur cet appareil.</p>}
       {/* Top Header */}
-      <div className="flex items-center justify-between gap-4 bg-white px-6 py-4 rounded-3xl border-3 border-slate-200 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white px-6 py-4 rounded-3xl border-3 border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
           <span className="text-sm font-black text-[#1E293B]">
             Étape {currentRound + 1} sur {COUNTING_ROUNDS.length}
@@ -159,9 +200,9 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <TTSButton text={`Combien y a-t-il de ${currentItem.item} ?`} size="sm" />
+          {isAudioEnabled && <TTSButton text={`Combien y a-t-il de ${currentItem.item} ?`} size="sm" />}
           <span className="text-xs font-black text-[#2A6FB5] bg-[#EBF4FF] px-3.5 py-1.5 rounded-full border border-[#2A6FB5]/30">
-            {countedIndices.size} / {currentItem.count} comptés
+            {showExample ? 'Un exemple pour compter' : countedIndices.size + ' objets comptés'}
           </span>
         </div>
       </div>
@@ -174,7 +215,7 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
 
         <div className="flex flex-wrap items-center justify-center gap-5 my-6 min-h-[140px]">
           {Array.from({ length: currentItem.count }).map((_, idx) => {
-            const isCounted = countedIndices.has(idx);
+            const isCounted = countedIndices.has(idx) || showExample;
 
             return (
               <motion.button
@@ -200,7 +241,7 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
                 />
                 {isCounted && (
                   <span className="absolute right-1 top-1 h-7 w-7 rounded-full bg-emerald-700 flex items-center justify-center text-white font-['Fredoka'] text-base font-black">
-                    {Array.from(countedIndices).indexOf(idx) + 1}
+                    {showExample ? idx + 1 : Array.from(countedIndices).indexOf(idx) + 1}
                   </span>
                 )}
               </motion.button>
@@ -213,7 +254,16 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
         </p>
       </div>
 
-      {/* Number Choice Cards (Dictated by answerChoices) */}
+      <div className="text-center space-y-3">
+        <button type="button" onClick={handleShowExample} disabled={selectedNumber !== null}
+          className="min-h-[52px] rounded-2xl border-2 border-[#2A6FB5] bg-white px-6 py-3 font-bold text-[#2A6FB5] disabled:opacity-50">
+          Montre-moi comment compter
+        </button>
+        <p role="status" aria-live="polite" className="font-bold text-[#1E293B]">
+          {showExample ? `Compte les objets : ${Array.from({ length: currentItem.count }, (_, i) => i + 1).join(', ')}. Il y en a ${currentItem.count}.` : isCorrect === true ? 'Bravo !' : isCorrect === false ? 'Tu peux recompter ou demander un exemple.' : ''}
+        </p>
+      </div>
+      {/* Number choices follow this activity's saved learning level. */}
       <div
         className={`grid gap-4 ${
           options.length === 2

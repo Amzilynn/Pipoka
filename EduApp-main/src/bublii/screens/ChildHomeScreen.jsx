@@ -5,6 +5,7 @@ import { useBublii } from '../context/BubliiContext';
 import { speakText } from '../utils/speech';
 import ModuleIllustration from '../components/ModuleIllustration';
 import Logo from '../components/Logo';
+import CalendarShortcut, { DayExample } from '../components/CalendarShortcut';
 
 const moduleIconStyles = {
   learn: {
@@ -118,7 +119,7 @@ export default function ChildHomeScreen() {
     <div className="min-h-screen bublii-bg-canvas text-[#1E293B] pb-16">
       {/* ── HEADER ── */}
       <header className="bg-white/95 backdrop-blur-md border-b-2 border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="child-home-header max-w-5xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+        <div className="child-home-header max-w-7xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
 
           <div className="child-home-brand"><Logo size="sm" /></div>
 
@@ -163,8 +164,9 @@ export default function ChildHomeScreen() {
       </header>
 
       {/* ── 4 MODULE CARDS ── */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-8 pt-8">
-        <button type="button" onClick={() => navigate('/enfant/calendrier')} className="mb-6 w-full rounded-2xl border-2 border-blue-200 bg-white p-5 text-left font-bold text-blue-800 shadow-sm hover:bg-blue-50">Mon calendrier · Tâches et étapes en photos →</button>
+      <main className="child-home-layout max-w-7xl mx-auto px-4 sm:px-8 pt-8">
+        <aside className="child-home-sidebar" aria-label="Ma journée"><CalendarShortcut /><DayExample compact /></aside>
+        <section className="child-home-modules" aria-label="Mes activités">
 
         {/* Instruction label */}
         <p className="font-['Fredoka'] text-center text-xl sm:text-2xl font-bold text-slate-500 mb-7">
@@ -221,6 +223,7 @@ export default function ChildHomeScreen() {
             );
           })}
         </div>
+        </section>
       </main>
     </div>
   );

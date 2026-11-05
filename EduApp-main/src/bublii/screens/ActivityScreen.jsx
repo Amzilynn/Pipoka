@@ -122,6 +122,7 @@ export default function ActivityScreen() {
       case "compter-des-objets":
         return (
           <LearnCountingActivity
+            key={activeChild.id}
             childSettings={activeChild.settings}
             onComplete={handleActivityComplete}
           />
@@ -258,7 +259,7 @@ export default function ActivityScreen() {
   return (
     <div className="min-h-screen bublii-bg-canvas text-[#1E293B] flex flex-col justify-between">
       {/* Top Accessible Header */}
-      <header className="bg-white/95 backdrop-blur-md border-b-3 border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between gap-4 shadow-xs sticky top-0 z-30">
+      <header className="bg-white/95 backdrop-blur-md border-b-3 border-slate-200 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 shadow-xs sticky top-0 z-30">
         <button
           type="button"
           onClick={handleBackToChildHome}

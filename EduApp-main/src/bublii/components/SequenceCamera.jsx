@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPoseDetector } from '../utils/mediapipePose';
 import { matchesSequencePose } from '../utils/sequencePose';
 
-export default function SequenceCamera({ gesture, disabled, paused, celebrating, model, onMatch, onInteraction, matchPose = matchesSequencePose }) {
+export default function SequenceCamera({ gesture, disabled, paused, demonstrating = false, celebrating, model, onMatch, onInteraction, matchPose = matchesSequencePose }) {
   const [mode, setMode] = useState('off');
   const [message, setMessage] = useState('');
   const [progress, setProgress] = useState(0);
@@ -69,6 +69,7 @@ export default function SequenceCamera({ gesture, disabled, paused, celebrating,
     };
     const loop = async () => {
       if (cancelled) return;
+      if (latest.current.disabled) { held = null; }
       if (video.readyState >= 2 && video.currentTime !== lastTime && !document.hidden && !latest.current.disabled) {
         lastTime = video.currentTime; sending = true;
         try { await detector.send({ image: video }); errors = 0; }
@@ -107,7 +108,7 @@ export default function SequenceCamera({ gesture, disabled, paused, celebrating,
         <div className="w-full" style={{ aspectRatio: '1 / 1' }}>{model}</div>
       </div>
       <div className="min-w-0 rounded-2xl border-2 border-[#D3E4DA] bg-[#F3F5F8] overflow-hidden">
-        <p className="py-2 text-center text-sm sm:text-lg font-bold text-slate-700">À toi !</p>
+        <p className="py-2 text-center text-sm sm:text-lg font-bold text-slate-700">{demonstrating ? 'Observe le modèle' : 'À toi !'}</p>
         <div className="relative flex items-center justify-center w-full bg-slate-100" style={{ aspectRatio: '1 / 1' }}>
           {mode === 'camera' ? <>
             <video ref={videoRef} autoPlay muted playsInline className="absolute inset-0 h-full w-full -scale-x-100 object-contain" />
@@ -115,7 +116,7 @@ export default function SequenceCamera({ gesture, disabled, paused, celebrating,
             {celebrating && <div className="absolute bottom-2 left-2 right-2 rounded-xl bg-white/95 py-2 text-center text-lg font-bold text-emerald-800">✓ Bravo !</div>}
           </> : <div className="px-2 sm:px-5 text-center text-slate-600">
             <svg viewBox="0 0 80 64" aria-hidden="true" className="mx-auto mb-2 h-10 sm:h-16 w-16 sm:w-20" fill="none" stroke="currentColor" strokeWidth="3"><rect x="6" y="16" width="48" height="36" rx="9" /><path d="M54 28 L73 19 V49 L54 40" /><circle cx="29" cy="34" r="9" /></svg>
-            <p className="text-sm sm:text-lg">Fais le geste comme le modèle.</p>
+            <p className="text-sm sm:text-lg">{demonstrating ? 'Regarde d’abord le mouvement du modèle.' : 'Fais le geste comme le modèle.'}</p>
           </div>}
         </div>
       </div>
@@ -125,6 +126,6 @@ export default function SequenceCamera({ gesture, disabled, paused, celebrating,
       {(mode === 'camera' || mode === 'starting') && <button type="button" onClick={() => { stop(); setMode('off'); setProgress(0); setMessage('Caméra arrêtée. Tu peux continuer avec un adulte.'); }} className="min-h-[48px] rounded-xl border-2 border-slate-300 px-4 font-bold text-slate-700">Arrêter la caméra</button>}
     </div>
     {mode === 'camera' && <progress aria-label="Geste reconnu" value={disabled ? 0 : progress} max="1" className="mt-3 w-full h-3 accent-emerald-700" />}
-    <p role="status" aria-live="polite" className="mt-2 min-h-[24px] text-center text-sm sm:text-base text-slate-600">{paused ? 'Reprends quand tu veux.' : celebrating ? 'Super, on continue doucement.' : message || 'Tu peux aussi jouer sans caméra avec un adulte.'}</p>
+    <p role="status" aria-live="polite" className="mt-2 min-h-[24px] text-center text-sm sm:text-base text-slate-600">{paused ? 'Reprends quand tu veux.' : celebrating ? 'Super, on continue doucement.' : demonstrating ? 'Regarde le modèle. Ce sera ensuite à toi !' : message || 'Tu peux aussi jouer sans caméra avec un adulte.'}</p>
   </div>;
 }

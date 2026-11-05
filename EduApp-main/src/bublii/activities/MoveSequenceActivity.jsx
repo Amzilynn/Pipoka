@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { speakText, stopSpeech } from '../utils/speech';
 import SequenceCamera from '../components/SequenceCamera';
 import DanceDemonstration from '../components/DanceDemonstration';
@@ -29,13 +29,11 @@ export default function MoveSequenceActivity({ childSettings, onComplete }) {
   const step = STEPS[index];
   useEffect(() => () => clearTimeout(timer.current), []);
   useEffect(() => {
-    if (!finished && !paused) speakText(step.label, audioEnabled && voice);
+    if (!finished && !paused && !celebrating) speakText(demonstrating ? `Regarde le modèle. ${step.label}` : `À toi ! ${step.label}`, audioEnabled && voice);
     return stopSpeech;
-  }, [index, paused, finished, audioEnabled, voice, step.label]);
-  useEffect(() => {
-    if (paused || finished) return;
-    const demonstrationTimer = setTimeout(() => setDemonstratedIndex(index), 2600);
-    return () => clearTimeout(demonstrationTimer);
+  }, [index, paused, finished, celebrating, demonstrating, audioEnabled, voice, step.label]);
+  const finishDemonstration = useCallback(() => {
+    if (!paused && !finished) setDemonstratedIndex(index);
   }, [index, paused, finished]);
   const match = gesture => {
     if (locked.current || demonstrating || paused || finished || gesture !== step.id) return;
@@ -72,8 +70,8 @@ export default function MoveSequenceActivity({ childSettings, onComplete }) {
         <p className="mt-1 text-base sm:text-lg text-slate-700">{step.hint}</p>
         <button type="button" disabled={!audioEnabled || !voice || celebrating || paused} onClick={() => speakText(step.label, true)} className="mt-2 min-h-[48px] rounded-xl border-2 border-[#B8D5C6] bg-white px-4 font-bold text-[#245C46] disabled:opacity-50">Écouter la consigne</button>
       </div>
-      <SequenceCamera gesture={step.id} disabled={celebrating || paused || demonstrating} paused={paused} celebrating={celebrating} onMatch={match} onInteraction={reward.unlock} model={<DanceDemonstration key={`${index}-${paused}`} gesture={step.id} still={still || paused || celebrating} />} />
-      <div role="status" aria-live="polite" className="min-h-[60px] flex items-center justify-center px-4 py-3 text-center text-xl font-bold text-[#245C46] bg-[#EDF6F0]">{paused ? 'On fait une pause.' : celebrating ? '✓ Bravo ! Tu as réussi !' : 'Regarde, puis fais comme moi. À ton rythme.'}</div>
+      <SequenceCamera gesture={step.id} disabled={celebrating || paused || demonstrating} paused={paused} demonstrating={demonstrating} celebrating={celebrating} onMatch={match} onInteraction={reward.unlock} model={<DanceDemonstration key={`${index}-${paused}-${still}`} gesture={step.id} still={still || paused || celebrating || !demonstrating} onComplete={demonstrating && !paused ? finishDemonstration : undefined} />} />
+      <div role="status" aria-live="polite" className="min-h-[60px] flex items-center justify-center px-4 py-3 text-center text-xl font-bold text-[#245C46] bg-[#EDF6F0]">{paused ? 'On fait une pause.' : celebrating ? '✓ Bravo ! Tu as réussi !' : demonstrating ? 'Regarde le modèle : il te montre le mouvement.' : 'À toi ! Fais le même mouvement, à ton rythme.'}</div>
     </section>
     <div className="flex items-center justify-center gap-3" aria-label={`Progression : ${index} gestes terminés sur 5`}>
       {STEPS.map((item, i) => <span key={i} aria-current={i === index ? 'step' : undefined} className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-base font-bold ${i < index ? 'border-emerald-700 bg-emerald-700 text-white' : i === index ? 'border-emerald-700 bg-emerald-50 text-emerald-900' : 'border-slate-300 bg-white text-slate-500'}`}>{i < index ? '✓' : i + 1}</span>)}

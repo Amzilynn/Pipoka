@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import CalendarShortcut from '../components/CalendarShortcut';
 import { useBublii } from '../context/BubliiContext';
 
 export default function SpecialistDashboard() {
@@ -64,7 +65,8 @@ export default function SpecialistDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="dashboard-header-actions">
+            <CalendarShortcut role="specialiste" compact />
             <button
               type="button"
               onClick={() => {
@@ -81,7 +83,6 @@ export default function SpecialistDashboard() {
 
       {/* Main Workspace */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        <button type="button" onClick={() => navigate('/specialiste/calendrier')} className="mb-6 w-full rounded-2xl border-2 border-blue-200 bg-white p-5 text-left font-bold text-blue-800 shadow-sm hover:bg-blue-50">Mon calendrier · Tâches et étapes en photos →</button>
         {/* Child Roster Navigation */}
         <section className="bg-white rounded-2xl p-4 border border-[#D1D5DB] shadow-xs">
           <div className="flex items-center justify-between mb-3 px-1">
@@ -157,7 +158,7 @@ export default function SpecialistDashboard() {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl text-xs font-bold">
+            <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl text-xs font-bold">
               {[
                 { id: 'objectives', label: 'Objectifs ciblés' },
                 { id: 'settings', label: 'Paramétrage fin' },

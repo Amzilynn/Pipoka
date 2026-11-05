@@ -1,4 +1,4 @@
-﻿export function cameraErrorMessage(error) {
+export function cameraErrorMessage(error) {
   const messages = {
     InsecureContextError: 'La caméra nécessite une adresse HTTPS ou localhost. Ouvre cette page avec une adresse sécurisée.',
     UnsupportedCameraError: 'Ce navigateur ne donne pas accès à la caméra. Ouvre la page dans Chrome, Edge ou Safari.',
@@ -11,7 +11,7 @@
   };
   return messages[error?.name] || 'La caméra ne peut pas démarrer. Vérifie son autorisation et réessaie.';
 }
-export function openCamera({ signal, timeout = 20000, mediaDevices = navigator.mediaDevices, secure = window.isSecureContext } = {}) {
+export function openCamera({ signal, timeout = 20000, facingMode = 'user', mediaDevices = navigator.mediaDevices, secure = window.isSecureContext } = {}) {
   if (!secure) return Promise.reject(new DOMException('HTTPS required', 'InsecureContextError'));
   if (!mediaDevices?.getUserMedia) return Promise.reject(new DOMException('Camera API missing', 'UnsupportedCameraError'));
   return new Promise((resolve, reject) => {
@@ -26,7 +26,7 @@ export function openCamera({ signal, timeout = 20000, mediaDevices = navigator.m
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) { abort(); return; }
     const request = async () => {
-      try { return await mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'user' }, width: { ideal: 640 }, height: { ideal: 480 } } }); }
+      try { return await mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: facingMode }, width: { ideal: 640 }, height: { ideal: 480 } } }); }
       catch (error) {
         if (error.name === 'OverconstrainedError' && !signal?.aborted) return mediaDevices.getUserMedia({ audio: false, video: true });
         throw error;
