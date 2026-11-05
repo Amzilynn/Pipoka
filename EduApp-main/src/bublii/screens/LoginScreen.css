@@ -77,3 +77,16 @@
 @media (max-width: 480px) {
   .login-brand-link .bublii-logo { --brand-width: 150px; }
 }
+
+.adult-auth-form { text-align: left; margin: 24px 0; }
+.adult-auth-form fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 18px; min-width: 0; }
+.adult-auth-form label { display: grid; gap: 8px; font-weight: 800; }
+.adult-auth-form input:not([type='checkbox']) { width: 100%; min-height: 52px; padding: 12px 14px; border: 2px solid #cbd5e1; border-radius: 14px; background: white; color: #20334b; font: inherit; }
+.adult-auth-form .adult-auth-show { display: flex; align-items: center; gap: 10px; font-size: .9rem; }
+.adult-auth-show input { width: 20px; height: 20px; accent-color: var(--login-accent); }
+.adult-auth-hint { margin: -8px 0 0; color: #52647a; font-size: .875rem; }
+.adult-auth-error { color: #9f263d; padding: 12px; border: 1px solid #f1b4bf; background: #fff0f2; border-radius: 12px; margin: 0; }
+.adult-auth-switch { font-size: .95rem; }
+.adult-auth-switch button { border: 0; background: none; color: var(--login-accent); text-decoration: underline; padding: 10px; min-height: 44px; }
+.auth-loading { min-height: 100vh; display: grid; place-content: center; gap: 16px; padding: 24px; text-align: center; background: #faf7f2; color: #20334b; font: 700 1rem 'Nunito', sans-serif; }
+.auth-loading button { padding: 12px; border: 2px solid #c7dff8; background: white; border-radius: 12px; cursor: pointer; }

@@ -1,4 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { readChildAccess } from '../utils/childAccess';
+import { useAuth } from './AuthContext';
+import { mergeChildProfiles, childProfile } from '../data/childProfiles';
+import { childrenRequest } from '../utils/childrenApi';
+import { accountLocalStorage, accountSessionStorage } from '../utils/accountStorage';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { appendCompletion, migrateProfiles, readSavedProfiles, PROFILES_STORAGE_KEY } from '../data/progress';
 
 // ============================================================================
@@ -17,10 +22,13 @@ export const INITIAL_CHILD_PROFILES = [{
 const BubliiContext = createContext(null);
 
 export function BubliiProvider({ children }) {
+  const { user } = useAuth();
+  const [childrenLoading, setChildrenLoading] = useState(Boolean(user));
+  const [childrenError, setChildrenError] = useState('');
   // 1. Current active role (enfant | parent | specialiste)
   const [currentRole, setCurrentRole] = useState(() => {
     try {
-      return sessionStorage.getItem('bubliiRole') || null;
+      return accountSessionStorage.getItem('bubliiRole') || null;
     } catch {
       return null;
     }
@@ -29,7 +37,7 @@ export function BubliiProvider({ children }) {
   // 2. Selected child ID
   const [selectedChildId, setSelectedChildId] = useState(() => {
     try {
-      return localStorage.getItem('bubliiChildId') || sessionStorage.getItem('bubliiChildId') || 'local-child';
+      return accountLocalStorage.getItem('bubliiChildId') || accountSessionStorage.getItem('bubliiChildId') || 'local-child';
     } catch {
       return 'local-child';
     }
@@ -38,23 +46,61 @@ export function BubliiProvider({ children }) {
   // 3. Child profiles with settings and progress
   const [profiles, setProfiles] = useState(() => {
     try {
-      const saved = readSavedProfiles(localStorage) || readSavedProfiles(sessionStorage);
-      const local = saved?.filter((profile) => profile.id === 'local-child');
+      const saved = readSavedProfiles(accountLocalStorage) || readSavedProfiles(accountSessionStorage);
+      if (user) {
+        if (user.role !== 'parent') return saved || [];
+        const peter = saved?.find(profile => profile.firstName.toLowerCase().startsWith('peter'));
+        return peter ? [peter] : (saved || []).slice(0, 1);
+      }
+      const registered = readChildAccess();
+      const local = saved?.filter(profile => profile.id === 'local-child' || registered[profile.id]);
       if (local?.length) return local;
-      const legacy = sessionStorage.getItem('bubliiProfiles');
+      const legacy = accountSessionStorage.getItem('bubliiProfiles');
       return migrateProfiles(INITIAL_CHILD_PROFILES, legacy ? JSON.parse(legacy) : null);
     } catch {
-      return migrateProfiles(INITIAL_CHILD_PROFILES, null);
+      return user ? [] : migrateProfiles(INITIAL_CHILD_PROFILES, null);
     }
   });
 
-  // Keep sessionStorage in sync
+  const refreshChildren = useCallback(async () => {
+    if (!user) return;
+    setChildrenLoading(true); setChildrenError('');
+    try {
+      const current = await childrenRequest();
+      const keys = new Set(current.children?.map(child => child.presentationKey));
+      const needsContent = user.role === 'parent' ? !current.children?.[0]?.presentationKey : ['peter', 'emma', 'noah', 'amir'].some(key => !keys.has(key));
+      const data = needsContent ? await childrenRequest('/representation', {}) : current;
+      if (!Array.isArray(data.children)) throw new Error('La liste des enfants est indisponible.');
+      setProfiles(previous => mergeChildProfiles(data.children, previous));
+    } catch (error) { setChildrenError(error.message); }
+    finally { setChildrenLoading(false); }
+  }, [user?.id]);
+  useEffect(() => { refreshChildren(); }, [refreshChildren]);
+  const addChild = async input => {
+    const data = await childrenRequest('', input);
+    setProfiles(previous => mergeChildProfiles(data.children, previous));
+    setSelectedChildId(data.child.id);
+    return data.child;
+  };
+  const associateChild = async code => {
+    const data = await childrenRequest('/associate', { code });
+    setProfiles(previous => mergeChildProfiles(data.children, previous));
+    setSelectedChildId(data.childId);
+  };
+  const updateChildProfile = async (id, input) => {
+    const data = await childrenRequest(`/${id}/profile`, input);
+    setProfiles(previous => mergeChildProfiles(data.children, previous));
+    return data.child;
+  };
+  const inviteForChild = id => childrenRequest(`/${id}/invitation`, {});
+
+  // Keep accountSessionStorage in sync
   useEffect(() => {
     try {
       if (currentRole) {
-        sessionStorage.setItem('bubliiRole', currentRole);
+        accountSessionStorage.setItem('bubliiRole', currentRole);
       } else {
-        sessionStorage.removeItem('bubliiRole');
+        accountSessionStorage.removeItem('bubliiRole');
       }
     } catch {
       // ignore in constrained storage
@@ -63,29 +109,44 @@ export function BubliiProvider({ children }) {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('bubliiChildId', selectedChildId);
-      localStorage.setItem('bubliiChildId', selectedChildId);
+      accountSessionStorage.setItem('bubliiChildId', selectedChildId);
+      accountLocalStorage.setItem('bubliiChildId', selectedChildId);
     } catch {
       // ignore
     }
   }, [selectedChildId]);
 
   useEffect(() => {
+    if (user && (childrenLoading || childrenError)) return;
     try {
-      localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles));
+      const old = accountLocalStorage.getItem(PROFILES_STORAGE_KEY);
+      if (user && old && !accountLocalStorage.getItem('bubliiLegacyProfilesBackup')) accountLocalStorage.setItem('bubliiLegacyProfilesBackup', old);
+      accountLocalStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles));
     } catch {
-      try { sessionStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles)); } catch { /* In-memory fallback. */ }
+      try { accountSessionStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles)); } catch { /* In-memory fallback. */ }
     }
-  }, [profiles]);
+  }, [profiles, childrenLoading, childrenError, user?.id]);
 
   // The active child object
-  const activeChild = profiles.find((p) => p.id === selectedChildId) || profiles[0];
+  const activeChild = profiles.find((p) => p.id === selectedChildId) || profiles[0] || INITIAL_CHILD_PROFILES[0];
 
   // Action: Switch active child
   const switchChild = (childId) => {
     if (profiles.some((p) => p.id === childId)) {
       setSelectedChildId(childId);
     }
+  };
+
+  const enterRegisteredChild = id => {
+    if (user) {
+      if (!profiles.some(profile => profile.id === id)) return false;
+    } else {
+      const registered = readChildAccess()[id]?.child;
+      if (!registered) return false;
+      setProfiles(previous => [...previous.filter(profile => profile.id !== id && profile.id !== 'local-child'), childProfile(registered, previous.find(profile => profile.id === id))]);
+    }
+    setSelectedChildId(id);
+    return true;
   };
 
   // Action: Update settings for a specific child (or active child)
@@ -120,26 +181,27 @@ export function BubliiProvider({ children }) {
 
   // Action: Reset profiles to default demo state
   const resetAllData = () => {
-    setProfiles(migrateProfiles(INITIAL_CHILD_PROFILES, null));
+    setProfiles(previous => user ? previous.map(profile => childProfile(profile)) : migrateProfiles(INITIAL_CHILD_PROFILES, null));
     setSelectedChildId('local-child');
     try {
-      sessionStorage.removeItem('bubliiProfiles');
-      sessionStorage.removeItem('bubliiChildId');
-      sessionStorage.removeItem(PROFILES_STORAGE_KEY);
-      localStorage.removeItem(PROFILES_STORAGE_KEY);
-      localStorage.removeItem('bubliiChildId');
+      accountSessionStorage.removeItem('bubliiProfiles');
+      accountSessionStorage.removeItem('bubliiChildId');
+      accountSessionStorage.removeItem(PROFILES_STORAGE_KEY);
+      accountLocalStorage.removeItem(PROFILES_STORAGE_KEY);
+      accountLocalStorage.removeItem('bubliiChildId');
     } catch {
       // ignore
     }
   };
 
   const value = {
+    childrenLoading, childrenError, refreshChildren, addChild, associateChild, inviteForChild, updateChildProfile,
     currentRole,
     setCurrentRole,
     selectedChildId,
     activeChild,
     profiles,
-    switchChild,
+    switchChild, enterRegisteredChild,
     updateSettings,
     recordActivityCompletion,
     resetAllData,

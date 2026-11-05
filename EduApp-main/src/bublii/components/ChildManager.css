@@ -1,0 +1,35 @@
+.child-manager { padding: 26px; background: #fff; border: 2px solid #c7dff8; border-radius: 28px; box-shadow: 0 6px 0 #0f172a08; min-width: 0; color: #1e293b; font-family: 'Nunito', sans-serif; }
+.child-manager-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.child-manager h2, .child-manager h3 { font-family: 'Fredoka', sans-serif; margin: 0 0 8px; }
+.child-manager h2 span { color: #64748b; font: 700 1rem 'Nunito', sans-serif; }
+.child-manager p { line-height: 1.6; margin: 8px 0; }
+.child-manager .child-manager-eyebrow { font-size: .8rem; font-weight: 900; letter-spacing: .1em; color: #1b4c7e; }
+.child-manager-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.child-manager button, .child-roster-page button { font: 800 .9375rem 'Nunito', sans-serif; min-height: 46px; padding: 10px 16px; border: 2px solid #c7dff8; border-radius: 14px; background: #ebf4ff; color: #1b4c7e; cursor: pointer; }
+.child-manager button:hover:not(:disabled) { background: #dbeafe; }
+.child-manager button:disabled { opacity: .55; cursor: wait; }
+.child-manager :is(button, input):focus-visible { outline: 3px solid #2a6fb5; outline-offset: 3px; }
+.child-manager-form, .child-manager-invitation { padding: 22px; border: 2px solid #e2e8f0; border-radius: 20px; background: #f8fafc; margin-top: 22px; }
+.child-manager-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.child-manager label { display: grid; gap: 8px; font-weight: 800; margin: 16px 0; min-width: 0; }
+.child-manager input { width: 100%; min-width: 0; min-height: 48px; border: 2px solid #cbd5e1; border-radius: 12px; padding: 10px 12px; font: inherit; background: white; color: #1e293b; box-sizing: border-box; }
+.child-manager-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; }
+.child-manager-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; padding: 0; margin: 24px 0 0; list-style: none; }
+.child-manager-list > li { border: 2px solid #e2e8f0; border-radius: 22px; padding: 12px; background: #fff; min-width: 0; }
+.child-manager-list > li.is-selected { border-color: #2a6fb5; background: #f1f7ff; }
+.child-manager .child-manager-select { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: transparent; text-align: left; padding: 8px; }
+.child-manager-select strong { display: block; font: 600 1.3rem 'Fredoka', sans-serif; overflow-wrap: anywhere; }
+.child-manager-select small { display: block; color: #58677b; font-size: .875rem; margin-top: 4px; }
+.child-manager-avatar { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: 1.4rem; }
+.child-manager .child-manager-share { background: white; margin-top: 12px; width: 100%; font-size: .875rem; }
+.child-manager-linked { display: inline-block; color: #187653; background: #e6fffa; padding: 7px 12px; border-radius: 12px; margin-top: 12px; font-weight: 800; font-size: .875rem; }
+.child-manager-error { padding: 12px; color: #9f263d; background: #fff0f2; border-radius: 12px; }
+.child-manager-notice { padding: 12px; color: #146844; background: #e6fffa; border-radius: 12px; }
+.child-manager-empty { padding: 18px; background: #fffbea; border-radius: 16px; }
+.child-manager .child-manager-footnote { font-size: .875rem; color: #58677b; margin-top: 20px; }
+.child-roster-page { min-height: 100vh; }
+.child-roster-page > header { padding: 20px 28px; background: white; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 2px solid #e2e8f0; }
+.child-roster-page > header a:last-child { color: #1b4c7e; font-weight: 800; }
+.child-roster-page main { max-width: 1200px; margin: auto; padding: 32px 24px; }
+.child-roster-page h1 { margin-bottom: 24px; }
+@media (max-width: 680px) { .child-manager { padding: 20px; } .child-manager-fields { grid-template-columns: 1fr; gap: 0; } .child-manager-form, .child-manager-invitation { padding: 16px; } .child-roster-page main { padding: 24px 16px; } }

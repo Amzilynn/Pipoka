@@ -48,3 +48,27 @@
 .lp-team-photo img { display: block; width: 100%; height: auto; }
 .lp-team-photo figcaption { padding: 14px 20px; color: #6e607c; font-size: 13px; text-align: center; }
 @media (max-width: 560px) { .lp-team-photo { border-radius: 14px; } .lp-team-photo figcaption { padding: 12px; font-size: 12px; } }
+/* Clear prices for families and classes. */
+.lp-pricing { scroll-margin-top: 24px; border-top: 1px solid #ece6df; }
+.lp-pricing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 36px; }
+.lp-price-card { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; padding: 28px; border: 1px solid #e3dbea; border-radius: 24px; background: #fffdf9; }
+.lp-price-card.lp-price-premium { border: 2px solid #b59bde; background: #f4effb; }
+.lp-price-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 15px; background: #fff0ce; color: #8a6a23; font-size: 28px; margin-bottom: 20px; }
+.lp-price-premium .lp-price-icon { background: #f6dfe7; color: #ad4f72; }
+.lp-price-card:last-child .lp-price-icon { background: #dff1e6; color: #426e58; }
+.lp-price-card .lp-price-audience { color: #705779; font-size: 10px; letter-spacing: .08em; font-weight: 850; margin-bottom: 10px; }
+.lp-price-card h3 { font-size: 26px; margin-bottom: 18px; }
+.lp-price-card .lp-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; color: #302746; margin: 0 0 12px; }
+.lp-price strong { font: 500 clamp(34px, 3.2vw, 46px) 'Fredoka', sans-serif; }
+.lp-price > span { color: #6e607c; font-size: 14px; }
+.lp-price-card .lp-price-detail { min-height: 56px; font-size: 14px; color: #5e536b; line-height: 1.7; margin-bottom: 18px; }
+.lp-price-card > p:not(.lp-price):not(.lp-price-audience):not(.lp-price-detail), .lp-price-card li { color: #5e536b; font-size: 14px; line-height: 1.8; }
+.lp-price-card ul { list-style: none; padding: 0; margin: 0 0 20px; }
+.lp-price-card li { position: relative; padding-left: 22px; margin: 0 0 8px; }
+.lp-price-card li::before { content: '\2713'; position: absolute; left: 0; color: #426e58; font-weight: 850; }
+.lp-price-card .lp-button { margin-top: auto; min-height: 52px; width: 100%; justify-content: center; text-align: center; font-size: 13px; padding: 13px 14px; box-sizing: border-box; }
+.lp-price-card > p:last-of-type { margin-bottom: 24px; }
+.lp-pricing-notes { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 28px; padding: 26px; border: 1px solid #e8e0ee; border-radius: 20px; background: #f4f0e9; }
+.lp-pricing-notes h3 { font-size: 21px; margin-bottom: 10px; }.lp-pricing-notes p { font-size: 14px; line-height: 1.8; color: #5e536b; }
+@media (max-width: 1000px) { .lp-price-card { padding: 22px; }.lp-pricing-grid { gap: 14px; }.lp-price-card h3 { font-size: 23px; } }
+@media (max-width: 760px) { .lp-pricing-grid, .lp-pricing-notes { grid-template-columns: 1fr; }.lp-pricing-grid { gap: 18px; }.lp-price-card { padding: 26px; }.lp-price strong { font-size: 42px; }.lp-price-card .lp-price-detail { min-height: 0; }.lp-pricing-notes { padding: 23px; gap: 24px; } }

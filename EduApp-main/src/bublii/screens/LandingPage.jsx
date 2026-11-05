@@ -27,8 +27,8 @@ export default function LandingPage() {
         <Link to="/" className="lp-brand" aria-label="Boblii, accueil"><Logo /></Link>
         <button className="lp-menu" aria-expanded={menuOpen} aria-controls="landing-nav" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? 'Fermer ✕' : 'Menu ☰'}</button>
         <nav id="landing-nav" className={menuOpen ? 'lp-nav is-open' : 'lp-nav'} aria-label="Navigation principale" onClick={() => setMenuOpen(false)}>
-          <a href="#univers">Nos univers</a><a href="#approche">Notre approche</a><a href="#ensemble">Pour les familles</a><a href="#contact">Contact</a>
-          <Link className="lp-button lp-button-small" to="/connexion">Entrer dans Boblii <span aria-hidden="true">↗</span></Link>
+          <a href="#univers">Nos univers</a><a href="#approche">Notre approche</a><a href="#ensemble">Pour les familles</a><a href="#tarifs">Tarifs</a><a href="#contact">Contact</a>
+          <Link className="lp-button lp-button-small" to="/connexion">Se connecter / S’inscrire <span aria-hidden="true">↗</span></Link>
         </nav>
       </header>
       <main id="contenu">
@@ -37,7 +37,7 @@ export default function LandingPage() {
             <span className="lp-eyebrow"><span/> UN MONDE DE POSSIBILITÉS</span>
             <h1>Les petits pas<br/>font les <span>grandes<br className="lp-desktop-break"/> découvertes.</span></h1>
             <p>Apprendre, s’exprimer, bouger, grandir. Un univers ludique pour accompagner chaque enfant, à son rythme et à sa façon.</p>
-            <div className="lp-actions"><Link to="/connexion" className="lp-button">C’est parti ! <span aria-hidden="true">↗</span></Link><a href="#univers" className="lp-text-link"><span className="lp-play" aria-hidden="true">↓</span> Explorer les activités</a></div>
+            <div className="lp-actions"><Link to="/connexion" className="lp-button">Se connecter / S’inscrire <span aria-hidden="true">↗</span></Link><a href="#univers" className="lp-text-link"><span className="lp-play" aria-hidden="true">↓</span> Explorer les activités</a></div>
             <div className="lp-hero-note"><span aria-hidden="true">✦</span> Chaque enfant a sa place. Chaque progrès compte.</div>
           </div>
           <div className="lp-world" aria-label="Boblii, le compagnon des quatre univers d’activités" role="img">
@@ -61,6 +61,15 @@ export default function LandingPage() {
           <div><span className="lp-eyebrow">LA CONFIANCE, ÇA SE CULTIVE</span><h2>Pas de course.<br/>Juste le plaisir d’avancer.</h2><p className="lp-body-copy">On n’apprend pas tous de la même façon. Boblii fait une place aux images, aux mots et aux mouvements pour rendre chaque découverte plus concrète.</p><ul className="lp-checks"><li>Des activités pour apprendre en faisant</li><li>Des repères visuels et des consignes audio</li><li>Un compagnon pour encourager l’exploration</li></ul><Link to="/connexion" className="lp-text-link">Découvrir mon espace <span aria-hidden="true">↗</span></Link></div>
         </section>
         <section id="ensemble" className="lp-section lp-together"><span className="lp-eyebrow">ON GRANDIT MIEUX ENSEMBLE</span><h2>Une aventure à partager.</h2><p>Autour de l’enfant, chacun a son espace pour l’accompagner.</p><div className="lp-audiences"><Link to="/connexion"><span aria-hidden="true">☺</span><h3>Pour les enfants</h3><p>Choisir, jouer et découvrir avec Boblii.</p><strong>Je découvre <span aria-hidden="true">↗</span></strong></Link><Link to="/connexion"><span aria-hidden="true">♡</span><h3>Pour les parents</h3><p>Accompagner les activités et suivre le parcours.</p><strong>J’accompagne <span aria-hidden="true">↗</span></strong></Link><Link to="/connexion"><span aria-hidden="true">✳</span><h3>Pour les spécialistes</h3><p>Retrouver un espace dédié à l’accompagnement.</p><strong>J’explore <span aria-hidden="true">↗</span></strong></Link></div></section>
+        <section id="tarifs" className="lp-section lp-pricing" aria-labelledby="pricing-title">
+          <div className="lp-section-heading"><div><span className="lp-eyebrow">CHOISIR CE QUI VOUS CONVIENT</span><h2 id="pricing-title">Pour votre enfant.<br/>Pour votre classe.</h2></div><p>Commencer gratuitement, aller plus loin en famille<br/>ou accompagner toute une classe.</p></div>
+          <div className="lp-pricing-grid">
+            <article className="lp-price-card"><span className="lp-price-icon" aria-hidden="true">☀</span><p className="lp-price-audience">POUR FAIRE SES PREMIERS PAS</p><h3>Gratuit</h3><p className="lp-price"><strong>0 €</strong></p><p className="lp-price-detail">Un accès gratuit pour commencer.</p><p>Découvrir Boblii et entrer dans l’aventure, au rythme de votre enfant.</p><Link className="lp-button" to="/connexion?mode=signup">Commencer gratuitement <span aria-hidden="true">↗</span></Link></article>
+            <article className="lp-price-card lp-price-premium"><span className="lp-price-icon" aria-hidden="true">♡</span><p className="lp-price-audience">POUR LES FAMILLES</p><h3>Premium</h3><p className="lp-price"><strong>10 €</strong><span>/ mois</span></p><p className="lp-price-detail">ou <strong>100 € par an</strong><br/>Par enfant, TVA incluse.</p><ul><li>L’accès Premium pour votre enfant</li><li>Votre tableau de bord parent</li><li>Des nouvelles à partager, si vous le souhaitez</li></ul><Link className="lp-button" to="/connexion/parent?mode=signup">Créer mon compte parent <span aria-hidden="true">↗</span></Link></article>
+            <article className="lp-price-card"><span className="lp-price-icon" aria-hidden="true">✦</span><p className="lp-price-audience">POUR LES ÉTABLISSEMENTS ET LES ULIS</p><h3>Avec toute la classe</h3><p className="lp-price"><strong>1 000 €</strong><span>/ an</span></p><p className="lp-price-detail">Hors TVA, par groupe-classe.<br/>Jusqu’à 30 élèves.</p><p>Un accès pour accompagner les enfants au sein de votre classe ou de votre dispositif ULIS.</p><Link className="lp-button" to="/connexion/specialiste?mode=signup">Découvrir l’espace éducateur <span aria-hidden="true">↗</span></Link></article>
+          </div>
+          <div className="lp-pricing-notes"><div><h3>Rendre Boblii plus accessible</h3><p>Un tarif réduit pourra être proposé aux familles si des aides extérieures le permettent.</p></div><div><h3>Prendre le temps de découvrir en classe</h3><p>Avant l’abonnement annuel, une première période de découverte permet aux enseignants, aux enfants et aux responsables de l’établissement de prendre en main Boblii.</p></div></div>
+        </section>
         <section className="lp-final"><span aria-hidden="true" className="lp-final-star">✳</span><span className="lp-eyebrow">LE PREMIER PAS, C’EST PAR ICI</span><h2>Et si on découvrait<br/>quelque chose aujourd’hui ?</h2><Link to="/connexion" className="lp-button">Bienvenue dans Boblii <span aria-hidden="true">↗</span></Link><p>Un petit clic. Une nouvelle aventure.</p></section>
         <section id="contact" className="lp-section lp-contact" aria-labelledby="contact-title">
           <div className="lp-section-heading">

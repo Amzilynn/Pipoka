@@ -1,19 +1,23 @@
+import { accountLocalStorage, accountSessionStorage, accountKey } from '../utils/accountStorage';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBublii } from '../context/BubliiContext';
 import TTSButton from '../components/TTSButton';
 import { makeRoutine, recordRoutineStep, routineDay, routineKey, routinesOn, ROUTINE_MODELS, ROUTINES_KEY } from './routines.js';
 import './routines.css';
+import { seedDailyRoutines } from '../data/representation';
 
 const RoutinesContext = createContext(null);
+export const useRoutines = () => useContext(RoutinesContext);
 function read() {
-  const raw = localStorage.getItem(ROUTINES_KEY);
+  const raw = accountLocalStorage.getItem(ROUTINES_KEY);
   if (!raw) return { version: 1, routines: [], progress: {} };
   const value = JSON.parse(raw);
   if (value.version !== 1 || !Array.isArray(value.routines) || !value.progress || typeof value.progress !== 'object' || Array.isArray(value.progress) || value.routines.some((r) => !r.id || !r.revision || !r.childId || !Array.isArray(r.steps) || !r.steps.length || r.steps.some((s) => typeof s !== 'string') || typeof r.title !== 'string' || !['daily', 'once'].includes(r.repeat))) throw new Error('Les routines enregistrées ne peuvent pas être lues. Elles sont conservées sans modification.');
   return value;
 }
 export function RoutinesProvider({ children }) {
+  const { profiles } = useBublii();
   const [initial] = useState(() => { try { return { data: read(), error: '' }; } catch { return { data: { version: 1, routines: [], progress: {} }, error: 'Les routines ne sont pas accessibles. Les données existantes sont conservées.' }; } });
   const [data, setData] = useState(initial.data);
   const [error, setError] = useState(initial.error);
@@ -22,14 +26,20 @@ export function RoutinesProvider({ children }) {
   const commit = (update) => {
     if (blocked.current) throw new Error('Les routines ne sont pas accessibles. Rechargez la page avant de réessayer.');
     const next = update(ref.current);
-    try { localStorage.setItem(ROUTINES_KEY, JSON.stringify(next)); }
+    try { accountLocalStorage.setItem(ROUTINES_KEY, JSON.stringify(next)); }
     catch { setError('Enregistrement impossible dans ce navigateur. Votre action n’a pas été sauvegardée.'); throw new Error('Enregistrement impossible. Réessayez sans fermer cette page.'); }
     ref.current = next; setData(next); setError('');
   };
   useEffect(() => {
-    const refresh = (event) => { if (event.key !== ROUTINES_KEY && event.key !== null) return; try { const next = read(); ref.current = next; setData(next); blocked.current = false; setError(''); } catch { blocked.current = true; setError('Une mise à jour des routines ne peut pas être lue.'); } };
+    const refresh = (event) => { if (event.key !== accountKey(ROUTINES_KEY) && event.key !== null) return; try { const next = read(); ref.current = next; setData(next); blocked.current = false; setError(''); } catch { blocked.current = true; setError('Une mise à jour des routines ne peut pas être lue.'); } };
     window.addEventListener('storage', refresh); return () => window.removeEventListener('storage', refresh);
   }, []);
+  const profileKeys = profiles.map(child => `${child.id}:${child.presentationKey || ''}`).join(',');
+  useEffect(() => {
+    if (blocked.current) return;
+    const next = seedDailyRoutines(ref.current, profiles);
+    if (next !== ref.current) { try { commit(() => next); } catch { /* The provider exposes its storage error. */ } }
+  }, [profileKeys]);
   return <RoutinesContext.Provider value={{ data, commit, error }}>{children}</RoutinesContext.Provider>;
 }
 
@@ -50,13 +60,14 @@ function RoutineEditor({ child, author, existing, onClose }) {
 }
 export function RoutineManager({ child, author }) {
   const { data, commit, error } = useContext(RoutinesContext);
+  const { setCurrentRole } = useBublii();
   const navigate = useNavigate();
   const [date, setDate] = useState(routineDay());
   const [editor, setEditor] = useState(null);
   const [message, setMessage] = useState('');
   const items = routinesOn(data.routines, child.id, date);
   return <details className="routine-manager"><summary>Calendrier du quotidien de {child.firstName}</summary><p>Préparez des petites tâches que l’enfant suivra une étape à la fois : son sac, le coucher ou un rendez-vous. Les routines créées ici sont communes aux espaces Parent et ESMS pour cet enfant, dans ce navigateur.</p>
-    {error && <p role="alert">{error}</p>}<div className="routine-actions"><button type="button" onClick={() => { setEditor({}); setMessage(''); }}>+ Créer une routine</button><button type="button" onClick={() => navigate('/enfant/routines')}>Voir le calendrier côté enfant ↗</button></div>
+    {error && <p role="alert">{error}</p>}<div className="routine-actions"><button type="button" onClick={() => { setEditor({}); setMessage(''); }}>+ Créer une routine</button><button type="button" onClick={() => { setCurrentRole('enfant'); navigate('/enfant/routines'); }}>Voir le calendrier côté enfant ↗</button></div>
     {editor && <RoutineEditor key={editor.id || 'new'} child={child} author={author} existing={editor.id ? editor : null} onClose={(text) => { setEditor(null); setMessage(text); }} />}
     <p role="status">{message}</p><label>Voir les routines d’un jour<input type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></label>
     {!items.length && <p>Aucune routine prévue pour ce jour. Créez-en une ou choisissez une autre date.</p>}
@@ -68,6 +79,7 @@ export function RoutineManager({ child, author }) {
 export function ChildRoutines() {
   const { activeChild } = useBublii();
   const { data, commit, error } = useContext(RoutinesContext);
+  const { setCurrentRole } = useBublii();
   const navigate = useNavigate();
   const [date, setDate] = useState(routineDay());
   const [selected, setSelected] = useState('');

@@ -70,7 +70,7 @@ export default function ActivityScreen() {
   };
 
   const renderModuleOverview = () => (
-    <div className="w-full max-w-4xl mx-auto flex flex-col gap-5 py-6">
+    <div className="activity-module-overview w-full max-w-4xl mx-auto flex flex-col gap-5 py-6">
       <div className="text-center mb-3">
         <p className="font-['Fredoka'] text-sm uppercase tracking-[0.2em] font-black text-slate-500">
           Module {currentModule.title}
@@ -309,7 +309,7 @@ export default function ActivityScreen() {
       </header>
 
       {/* Main Activity Stage */}
-      <main className="max-w-4xl mx-auto w-full p-4 sm:p-8 flex-1 flex flex-col justify-center">
+      <main className="activity-main max-w-4xl mx-auto w-full p-4 sm:p-8 flex-1 flex flex-col justify-center">
         {showModuleOverview
           ? renderModuleOverview()
           : renderActivityComponent()}

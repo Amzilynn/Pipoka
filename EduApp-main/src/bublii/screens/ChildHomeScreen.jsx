@@ -1,3 +1,4 @@
+import ChildDayPreview from '../components/ChildDayPreview';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -5,7 +6,7 @@ import { useBublii } from '../context/BubliiContext';
 import { speakText } from '../utils/speech';
 import ModuleIllustration from '../components/ModuleIllustration';
 import Logo from '../components/Logo';
-import CalendarShortcut, { DayExample } from '../components/CalendarShortcut';
+import CalendarShortcut from '../components/CalendarShortcut';
 
 const moduleIconStyles = {
   learn: {
@@ -165,7 +166,7 @@ export default function ChildHomeScreen() {
 
       {/* ── 4 MODULE CARDS ── */}
       <main className="child-home-layout max-w-7xl mx-auto px-4 sm:px-8 pt-8">
-        <aside className="child-home-sidebar" aria-label="Ma journée"><CalendarShortcut /><button type="button" onClick={() => navigate('/enfant/routines')} className="my-4 w-full rounded-2xl border-2 border-indigo-300 bg-white p-4 font-bold text-indigo-900">Mes petites ?tapes</button><DayExample compact /></aside>
+        <aside className="child-home-sidebar" aria-label="Ma journée"><CalendarShortcut /><ChildDayPreview /></aside>
         <section className="child-home-modules" aria-label="Mes activités">
 
         {/* Instruction label */}
@@ -173,7 +174,7 @@ export default function ChildHomeScreen() {
           Qu'est-ce que tu veux faire ?
         </p>
 
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="child-module-grid mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2">
           {MODULE_DEFINITIONS.map((mod, idx) => {
             const progress = activeChild.moduleProgress[mod.id] || { stars: 0 };
 

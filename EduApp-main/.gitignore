@@ -39,3 +39,5 @@ archive/
 final girl arabic/
 final girl backup/
 recordings_*/
+# Private account database
+.data/

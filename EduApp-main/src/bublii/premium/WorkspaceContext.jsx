@@ -1,23 +1,24 @@
+import { accountLocalStorage, accountSessionStorage, accountKey } from '../utils/accountStorage';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { emptyWorkspace, loadWorkspace, WORKSPACE_KEY, uid } from './model';
 
 const WorkspaceContext = createContext(null);
 export function WorkspaceProvider({ children }) {
-  const [initial] = useState(() => { try { return { data: loadWorkspace(localStorage), error: '' }; } catch (error) { return { data: emptyWorkspace(), error: error.message }; } });
+  const [initial] = useState(() => { try { return { data: loadWorkspace(accountLocalStorage), error: '' }; } catch (error) { return { data: emptyWorkspace(), error: error.message }; } });
   const [data, setData] = useState(initial.data);
   const [error, setError] = useState(initial.error);
   const ref = useRef(data);
   const commit = (update) => {
     if (initial.error) throw new Error(initial.error);
     const next = update(ref.current);
-    try { localStorage.setItem(WORKSPACE_KEY, JSON.stringify(next)); }
+    try { accountLocalStorage.setItem(WORKSPACE_KEY, JSON.stringify(next)); }
     catch { setError('Enregistrement indisponible. Gardez votre texte ouvert et réessayez.'); throw new Error('Enregistrement indisponible dans ce navigateur.'); }
     ref.current = next; setData(next); setError('');
   };
   useEffect(() => {
     const refresh = (event) => {
-      if (event.key !== WORKSPACE_KEY) return;
-      try { const next = loadWorkspace(localStorage); ref.current = next; setData(next); setError(''); }
+      if (event.key !== accountKey(WORKSPACE_KEY)) return;
+      try { const next = loadWorkspace(accountLocalStorage); ref.current = next; setData(next); setError(''); }
       catch { setError('Une mise à jour locale n’a pas pu être lue.'); }
     };
     window.addEventListener('storage', refresh);

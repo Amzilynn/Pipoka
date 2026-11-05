@@ -1,15 +1,15 @@
-﻿# Local face login
+# Local child access
 
-Visit `/connexion/enfant` or `/login/enfant`. There are no fictional children: the app starts with one neutral local workspace and no invented progress. Older sessions containing the three demo children are migrated automatically.
+In the authenticated parent area, open **Son accès**. Each child has a personal eight-digit code. **Créer un nouveau code** invalidates the previous code immediately on this device.
 
-**Ouvrir la caméra** always requests camera access, including when no face has been registered. The camera status becomes active only after actual video frames arrive. With an adult, tick the consent box and press **Enregistrer mon visage** to collect three consistent face descriptors. Afterwards, **Me reconnaître** checks two consecutive matches and opens the local workspace. No typing or profile selection is needed.
+Choose **Enregistrer son visage**, grant parental consent and camera permission, then let the child look at the camera for three consistent samples. Enrollment and deletion are available only in the parent area.
 
-Permission refusal, missing camera, busy hardware, unsupported browser, insecure address and unanswered permission prompts have separate messages. Failed recognition loading leaves a working preview open. **J’ai besoin d’aide → Continuer sans caméra** opens the activities without fictional profiles.
+On `/connexion/enfant`, the camera starts automatically if a registered face is available. Two consecutive, unambiguous matches open the matching child's workspace without profile selection. Camera permissions may still require browser approval. If recognition is unavailable, a parent can enter the child's code. There is no unrestricted camera bypass.
 
-Camera access requires HTTPS or localhost and browser permission. Embedded windows may block access: open the page directly in Chrome, Edge or Safari if that happens. Camera tracks are released on stop, navigation, hidden tabs, cancellation and late permission responses.
+Setup is specific to this browser and device. After adult logout, face/code entry loads only the registered child's basic activity workspace; it does not authenticate an adult or expose the parent dashboard. The child shortcut stores identity and settings locally; it does not sync adult progress or calendar data across accounts or devices.
 
-Images remain in memory; raw photos and video are not saved or uploaded. Three face descriptors are stored locally until **Supprimer le visage enregistré** or clearing site data. This is a local convenience shortcut, without liveness detection or protected account sessions. It has not been validated for children with Down syndrome.
+Raw photos and video are not saved or uploaded. Three descriptors remain in local storage until deleted or site data is cleared. This is a local convenience shortcut without liveness detection or protected child account sessions. It has not been validated for children with Down syndrome. Codes are stored locally so parents can retrieve them; they are not server account credentials.
 
-The locally hosted runtime and models are `@vladmandic/face-api` 1.7.15, with the license in `public/assets/face-login`. Only detection, landmarks and identity descriptors are used. GPU inference falls back to CPU if necessary.
+Camera access requires HTTPS or localhost. Camera tracks are released on stop, navigation, hidden tabs, cancellation and late permission responses. Models and runtime are served from `public/assets/face-login`.
 
-Regression checks: `node --test scripts/test-login-camera.mjs` and `npm run build`.
+Validation: `node --test scripts/test-login-camera.mjs src/bublii/utils/childAccess.test.js`, `npm run test:auth`, and `npm run build`.

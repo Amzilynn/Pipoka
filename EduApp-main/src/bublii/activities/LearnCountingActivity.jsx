@@ -1,3 +1,4 @@
+import { accountLocalStorage } from '../utils/accountStorage';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { speakText, stopSpeech } from '../utils/speech';
@@ -32,7 +33,7 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
   const { activeChild } = useBublii();
   const childId = activeChild.id;
   const [progress] = useState(() => {
-    try { return readCountingProgress(window.localStorage, childId); }
+    try { return readCountingProgress(accountLocalStorage, childId); }
     catch { return freshCountingProgress(); }
   });
   const progressRef = useRef(progress);
@@ -99,7 +100,7 @@ export default function LearnCountingActivity({ childSettings, onComplete }) {
       recordedAt: new Date().toISOString(),
     });
     progressRef.current = next;
-    try { setStorageAvailable(saveCountingProgress(window.localStorage, childId, next)); }
+    try { setStorageAvailable(saveCountingProgress(accountLocalStorage, childId, next)); }
     catch { setStorageAvailable(false); }
 
     if (correct) {

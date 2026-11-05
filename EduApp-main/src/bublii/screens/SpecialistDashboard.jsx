@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import SpecialistDirectory from '../components/SpecialistDirectory';
+import ProgressCharts from '../components/ProgressCharts';
+import ChildProfile from '../components/ChildProfile';
+import ChildAvatar from '../components/ChildAvatar';
+import { useAuth } from '../context/AuthContext';
+import { accountLocalStorage, accountSessionStorage, accountKey } from '../utils/accountStorage';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBublii } from '../context/BubliiContext';
 import { ACTIVITY_CATALOG } from '../data/progress';
 import { summarizeHistory, dayKey } from '../parent/parentMetrics';
 import { createObservation, readObservations, saveObservation } from '../esms/observations';
 import './SpecialistDashboard.css';
-import CalendarShortcut from '../components/CalendarShortcut';
+import Logo from '../components/Logo';
+import ModuleIllustration from '../components/ModuleIllustration';
 import { useWorkspace } from '../premium/WorkspaceContext';
 import { goalsFor } from '../premium/model';
 import Insights from '../premium/Insights';
@@ -64,7 +71,7 @@ function Overview({ child, metrics, onNotes }) {
         <h2 id="esms-support-title">Repères pour l’accompagner</h2>
         <div className="esms-support"><h3>Points d’appui</h3><div className="esms-tags">{child.strengths.map((item) => <span key={item}>{item}</span>)}</div></div>
         <div className="esms-support"><h3>Besoins d’accompagnement</h3><ul>{child.supportNeeds.map((item) => <li key={item}>{item}</li>)}</ul></div>
-        <p className="esms-muted">Repères du profil de démonstration.</p>
+        <p className="esms-muted">Repères de son profil.</p>
       </section>
       <section className="esms-panel" aria-labelledby="esms-goals-overview">
         <div className="esms-section-heading"><h2 id="esms-goals-overview">Ses objectifs d’accompagnement</h2><span className="esms-badge">Objectifs du dossier</span></div>
@@ -83,7 +90,7 @@ function History({ entries }) {
   if (!entries.length) return <p className="esms-empty">Aucune partie pour cette sélection.</p>;
   return <ul className="esms-history">{entries.map((entry) => <li key={entry.id}>
     <div><h3>{entry.label || 'Activité terminée'}</h3><p>{domainName(entry.module)} · <time dateTime={entry.completedAt.toISOString()}>{dateLabel(entry.completedAt)}</time></p></div>
-    <span className={`esms-badge ${entry.source === 'demo' ? '' : 'esms-badge-recorded'}`}>{entry.source === 'demo' ? 'Exemple' : 'Partie enregistrée'}</span>
+    <span className={`esms-badge ${entry.source === 'demo' ? '' : 'esms-badge-recorded'}`}>Activité terminée</span>
   </li>)}</ul>;
 }
 
@@ -122,7 +129,7 @@ function Activities({ child }) {
 
 function Observations({ child, draft, onDraft }) {
   const [initial] = useState(() => {
-    try { return { notes: readObservations(localStorage, child.id), error: '' }; }
+    try { return { notes: readObservations(accountLocalStorage, child.id), error: '' }; }
     catch { return { notes: [], error: 'Les observations conservées ne sont pas accessibles dans ce navigateur.' }; }
   });
   const [notes, setNotes] = useState(initial.notes);
@@ -136,7 +143,7 @@ function Observations({ child, draft, onDraft }) {
     try { note = createObservation(child.id, draft); }
     catch (cause) { setError(cause.message); return; }
     try {
-      setNotes(saveObservation(localStorage, child.id, notes, note));
+      setNotes(saveObservation(accountLocalStorage, child.id, notes, note));
       onDraft({ ...EMPTY_DRAFT, author: draft.author });
       setError(''); setMessage(`Observation enregistrée pour ${child.firstName}.`);
     } catch { setError('Enregistrement impossible. Votre texte est conservé dans le formulaire ; copiez-le avant de quitter la page.'); }
@@ -188,36 +195,45 @@ function Settings({ child, updateSettings }) {
   </section>;
 }
 
-export default function SpecialistDashboard() {
+function SpecialistDossier() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { profiles, activeChild, switchChild, updateSettings, setCurrentRole } = useBublii();
   const { data: workspace, error: workspaceError } = useWorkspace();
   const dossierChild = { ...activeChild, objectives: goalsFor(activeChild, workspace) };
-  const [view, setView] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = searchParams.get('view');
+  const view = ['sessions', 'institution', 'observations', 'activities', 'settings', 'insights', 'reports', 'collaboration'].includes(requestedView) ? requestedView : 'overview';
+  const setView = (nextView) => setSearchParams((previous) => {
+    const next = new URLSearchParams(previous);
+    if (nextView === 'overview') next.delete('view');
+    else next.set('view', nextView);
+    return next;
+  });
   const [drafts, setDrafts] = useState({});
   const metrics = summarizeHistory(activeChild.history);
   const weekly = summarizeHistory(activeChild.history, 'week');
   const discovered = Object.values(activeChild.moduleProgress).reduce((sum, item) => sum + item.completedCount, 0);
   const total = Object.values(ACTIVITY_CATALOG).reduce((sum, items) => sum + items.length, 0);
-  const exit = () => { setCurrentRole(null); navigate('/'); };
+  const exit = () => { setCurrentRole(null); navigate('/connexion'); };
 
-  return <div className="esms-dashboard">
+  return <div className="esms-dashboard adult-dashboard bublii-bg-canvas">
     <a className="esms-skip" href="#esms-main">Aller au dossier</a>
     <header className="esms-header"><div className="esms-header-inner">
-      <button type="button" className="esms-brand" onClick={exit} aria-label="Boblii, choisir un espace"><span className="esms-brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>Boblii <span>Établissement</span></button>
+      <button type="button" className="esms-brand" onClick={exit} aria-label="Boblii, choisir un espace"><Logo size="sm" /> <span>Établissement</span></button>
       <button type="button" className="esms-button esms-button-quiet" onClick={exit}>← Changer d’espace</button>
     </div></header>
     <main id="esms-main" className="esms-main">
-      <CalendarShortcut role="specialiste" compact />
-      <div className="esms-welcome"><div><p className="esms-eyebrow">ÉQUIPE ÉDUCATIVE</p><h1>Accompagner chaque parcours</h1><p>Les activités, les objectifs et les observations, réunis par enfant.</p></div><span className="esms-badge">Démonstration</span></div>
+<div className="story-section-heading"><button type="button" className="esms-button" onClick={() => navigate('/specialiste')}>← Tous les enfants</button><span>Dossier de {activeChild.firstName}</span></div>
+      <div className="esms-welcome adult-welcome"><div className="adult-welcome-art" aria-hidden="true"><ModuleIllustration theme="learn" /></div><div><p className="esms-eyebrow">ÉQUIPE ÉDUCATIVE</p><h1>Le parcours de {activeChild.firstName}</h1><p>Les activités, les objectifs et les observations, réunis par enfant.</p></div><span className="esms-badge">{user.name}</span></div>
 
       {view !== 'institution' && <><section className="esms-selector esms-panel" aria-labelledby="esms-children-title">
         <div><h2 id="esms-children-title">Enfants accompagnés <span>({profiles.length})</span></h2><p>Ouvrir un dossier individuel.</p></div>
-        <label htmlFor="esms-child-select">Choisir l’enfant<select id="esms-child-select" value={activeChild.id} onChange={(event) => switchChild(event.target.value)}>{profiles.map((child) => <option key={child.id} value={child.id}>{child.firstName} · {child.age ? `${child.age} ans` : '?ge non renseign?'}</option>)}</select></label>
+        <label htmlFor="esms-child-select">Choisir l’enfant<select id="esms-child-select" value={activeChild.id} onChange={(event) => switchChild(event.target.value)}>{profiles.map((child) => <option key={child.id} value={child.id}>{child.firstName} · {child.age ? `${child.age} ans` : 'Âge non renseigné'}</option>)}</select></label>
       </section>
 
       <section className="esms-dossier" aria-labelledby="esms-dossier-title">
-        <div className="esms-identity"><span className="esms-avatar" style={{ background: activeChild.avatar.bg, color: activeChild.avatar.color }} aria-hidden="true">{activeChild.avatar.initial}</span><div><h2 id="esms-dossier-title">Dossier de {activeChild.firstName}</h2><p>{activeChild.age ? `${activeChild.age} ans` : '?ge non renseign?'} · {activeChild.tagline}</p></div></div>
+        <div className="esms-identity"><ChildAvatar child={activeChild} className="esms-avatar" /><div><h2 id="esms-dossier-title">Dossier de {activeChild.firstName}</h2><p>{activeChild.age ? `${activeChild.age} ans` : 'Âge non renseigné'} · {activeChild.tagline}</p></div></div>
         <button type="button" className="esms-button esms-button-secondary" onClick={() => { setCurrentRole('enfant'); navigate('/enfant'); }}>Ouvrir ses activités ↗</button>
       </section>
 
@@ -225,6 +241,7 @@ export default function SpecialistDashboard() {
       {workspaceError && <p className="esms-error" role="alert">{workspaceError}</p>}
       <Notifications child={activeChild} role="esms" />
       </>}
+      {view === 'overview' && <><ProgressCharts child={activeChild} /><ChildProfile key={activeChild.id} child={activeChild} /></>}
       {view === 'overview' && <div className="esms-stats">
         <div><h3>Activités découvertes</h3><strong>{discovered}<span> / {total}</span></strong><p>Des jeux à faire et à refaire.</p></div>
         <div><h3>Parties cette semaine</h3><strong>{weekly.total}</strong><p>Sur les 7 derniers jours.</p></div>
@@ -256,11 +273,21 @@ export default function SpecialistDashboard() {
       </div>
 
       <details className="esms-method"><summary>À propos de ce suivi</summary>
-        <p>Les profils et objectifs initiaux sont des exemples de démonstration ; l’équipe peut ajouter ses propres objectifs. Les parties fictives sont marquées « Exemple » ; les nouvelles parties s’y ajoutent. Les activités terminées ne constituent pas une évaluation des compétences ou du développement.</p>
+        <p>Les activités, objectifs et observations servent à préparer un accompagnement individualisé et à suivre les petites avancées de chaque enfant.</p>
         <p>Les observations sont saisies par l’équipe et conservées uniquement dans ce navigateur, séparément des résultats des jeux. Il n’y a pas encore de partage entre professionnels ou appareils. Les brouillons restent disponibles en changeant de rubrique ou d’enfant, jusqu’à l’actualisation de la page.</p>
         <p>La présentation s’appuie sur les principes d’accompagnement individuel et de coopération avec les familles : <a href="https://www.has-sante.fr/jcms/p_3287349/" target="_blank" rel="noreferrer">HAS — Accompagner la scolarité</a> et <a href="https://ds-int.org/recommendations-for-the-education-of-learners-with-down-syndrome/" target="_blank" rel="noreferrer">Down Syndrome International — recommandations pour l’éducation</a>.</p>
       </details>
       <footer className="esms-footer">Boblii · Observer, adapter, accompagner.</footer>
     </main>
   </div>;
+}
+
+export default function SpecialistDashboard() {
+  const [params] = useSearchParams();
+  const { profiles, activeChild, switchChild } = useBublii();
+  const selected = profiles.find(child => child.id === params.get('child'));
+  useEffect(() => { if (selected && selected.id !== activeChild.id) switchChild(selected.id); }, [selected?.id, activeChild.id]);
+  if (!selected) return <SpecialistDirectory />;
+  if (selected.id !== activeChild.id) return <main className="auth-loading" role="status">Ouverture du dossier…</main>;
+  return <SpecialistDossier key={selected.id} />;
 }

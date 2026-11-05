@@ -1,10 +1,11 @@
+import { accountLocalStorage, accountSessionStorage, accountKey } from '../utils/accountStorage';
 import React from 'react';
 import { useWorkspace } from './WorkspaceContext';
 import { labelDate, sharedTimeline, DOMAIN_NAMES } from './model';
 import { readObservations } from '../esms/observations';
 
 export function notesFor(childId) {
-  try { return { notes: readObservations(localStorage, childId), error: '' }; }
+  try { return { notes: readObservations(accountLocalStorage, childId), error: '' }; }
   catch { return { notes: [], error: 'Les observations ne sont pas accessibles. Elles sont exclues de cette vue.' }; }
 }
 export function PeriodFields({ range, onChange }) {

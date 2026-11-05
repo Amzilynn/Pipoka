@@ -60,7 +60,7 @@ export function DayExample({ compact = false }) {
 }
 
 export default function CalendarShortcut({ role = 'enfant', compact = false }) {
-  return <Link to={`/${role}/calendrier`} className={`calendar-shortcut ${compact ? 'calendar-shortcut-compact' : ''}`}>
+  return <Link to={role === 'parent' ? '/parent?view=calendar' : role === 'enfant' ? '/enfant/routines' : '/specialiste'} className={`calendar-shortcut ${compact ? 'calendar-shortcut-compact' : ''}`}>
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <rect x="3" y="5" width="18" height="16" rx="4" /><path d="M7 3v4m10-4v4M3 11h18m-13 4h2m4 0h2m-8 3h2" />
     </svg>

@@ -1,3 +1,4 @@
+import { accountDatabase } from '../utils/accountStorage';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useBublii } from '../context/BubliiContext';
@@ -11,7 +12,7 @@ import '../components/ChildCalendarView.css';
 
 export const dateKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const openDatabase = () => new Promise((resolve, reject) => {
-  const request = indexedDB.open('bublii-calendar', 1);
+  const request = indexedDB.open(accountDatabase('bublii-calendar'), 1);
   request.onupgradeneeded = () => request.result.createObjectStore('tasks', { keyPath: 'id' });
   request.onsuccess = () => resolve(request.result);
   request.onerror = () => reject(request.error);
