@@ -1,403 +1,266 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import CalendarShortcut from '../components/CalendarShortcut';
 import { useBublii } from '../context/BubliiContext';
+import { ACTIVITY_CATALOG } from '../data/progress';
+import { summarizeHistory, dayKey } from '../parent/parentMetrics';
+import { createObservation, readObservations, saveObservation } from '../esms/observations';
+import './SpecialistDashboard.css';
+import CalendarShortcut from '../components/CalendarShortcut';
+import { useWorkspace } from '../premium/WorkspaceContext';
+import { goalsFor } from '../premium/model';
+import Insights from '../premium/Insights';
+import Sessions from '../premium/SessionsHome';
+import Reports from '../premium/Reports';
+import Institution from '../premium/Institution';
+import { ProfessionalCollaboration } from '../premium/Collaboration';
+import { Notifications } from '../premium/SharedUI';
+
+const DOMAINS = [
+  { id: 'learn', name: 'Apprendre', detail: 'Mots, nombres et logique', color: '#2458bd', soft: '#e1ebff' },
+  { id: 'communicate', name: 'Communiquer', detail: 'Émotions et expression', color: '#b32f50', soft: '#ffe5ec' },
+  { id: 'move', name: 'Bouger', detail: 'Gestes et repères corporels', color: '#08735d', soft: '#d8f3e9' },
+  { id: 'grow', name: 'Grandir', detail: 'Routines du quotidien', color: '#865600', soft: '#fff0c9' },
+];
+const SETTINGS = [
+  { key: 'answerChoices', label: 'Réponses proposées', help: 'Nombre de choix dans les activités compatibles.', options: [[2, '2 choix'], [3, '3 choix'], [4, '4 choix']] },
+  { key: 'audio', label: 'Lecture des consignes', help: 'Aide vocale pendant les activités.', options: [[true, 'Activée'], [false, 'Désactivée']] },
+  { key: 'hints', label: 'Indices disponibles', help: 'Maximum d’indices dans les activités compatibles.', options: [[1, '1 indice'], [2, '2 indices'], [3, '3 indices']] },
+  { key: 'difficulty', label: 'Difficulté du jeu', help: 'Niveau du jeu, sans correspondance avec un âge de développement.', options: [[3, 'Niveau 3'], [4, 'Niveau 4'], [5, 'Niveau 5']] },
+];
+const EMPTY_DRAFT = { author: '', objectiveId: '', context: 'Séance éducative', help: 'Non précisée', text: '', nextStep: '' };
+const domainName = (id) => DOMAINS.find((domain) => domain.id === id)?.name || 'Autre';
+const dateLabel = (date, withTime = true) => new Intl.DateTimeFormat('fr-FR', {
+  timeZone: 'Europe/Paris', day: 'numeric', month: 'short', year: 'numeric',
+  ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+}).format(new Date(date));
+
+function Goals({ child }) {
+  return <div className="esms-goals">
+    {(child.objectives || []).map((goal, index) => <article key={goal.id}>
+      <span className="esms-goal-number" aria-hidden="true">{index + 1}</span>
+      <div><p className="esms-eyebrow">{domainName(goal.module)}</p><h3>{goal.title}</h3></div>
+    </article>)}
+    {!child.objectives?.length && <p className="esms-empty">Aucun objectif renseigné pour cet enfant.</p>}
+  </div>;
+}
+
+function Overview({ child, metrics, onNotes }) {
+  return <>
+    <section className="esms-panel" aria-labelledby="esms-path-title">
+      <div className="esms-section-heading"><div><p className="esms-eyebrow">LES ACTIVITÉS DÉCOUVERTES</p><h2 id="esms-path-title">Son parcours dans Boblii</h2></div><span className="esms-muted">Depuis le début · jeux rejouables</span></div>
+      <div className="esms-domains">{DOMAINS.map((domain) => {
+        const progress = child.moduleProgress[domain.id];
+        return <article key={domain.id} style={{ '--domain-color': domain.color, background: domain.soft }}>
+          <h3>{domain.name}</h3><p>{domain.detail}</p>
+          <strong>{progress.completedCount}<span> / {progress.totalActivities}</span></strong>
+          <div className="esms-progress" role="progressbar" aria-label={`${domain.name} : activités terminées`} aria-valuemin={0} aria-valuemax={progress.totalActivities} aria-valuenow={progress.completedCount}><span style={{ width: `${progress.completedCount / progress.totalActivities * 100}%` }} /></div>
+          <p>{progress.completedCount === progress.totalActivities ? 'Tous les jeux découverts' : 'Activités différentes terminées'}</p>
+        </article>;
+      })}</div>
+    </section>
+
+    <div className="esms-overview-columns">
+      <section className="esms-panel" aria-labelledby="esms-support-title">
+        <h2 id="esms-support-title">Repères pour l’accompagner</h2>
+        <div className="esms-support"><h3>Points d’appui</h3><div className="esms-tags">{child.strengths.map((item) => <span key={item}>{item}</span>)}</div></div>
+        <div className="esms-support"><h3>Besoins d’accompagnement</h3><ul>{child.supportNeeds.map((item) => <li key={item}>{item}</li>)}</ul></div>
+        <p className="esms-muted">Repères du profil de démonstration.</p>
+      </section>
+      <section className="esms-panel" aria-labelledby="esms-goals-overview">
+        <div className="esms-section-heading"><h2 id="esms-goals-overview">Ses objectifs d’accompagnement</h2><span className="esms-badge">Objectifs du dossier</span></div>
+        <Goals child={child} />
+        <button type="button" className="esms-button esms-button-secondary" onClick={onNotes}>Noter une observation →</button>
+      </section>
+    </div>
+    <section className="esms-panel" aria-labelledby="esms-last-title">
+      <div className="esms-section-heading"><h2 id="esms-last-title">Dernières activités</h2><span className="esms-muted">Les 3 dernières parties</span></div>
+      <History entries={metrics.entries.slice(0, 3)} />
+    </section>
+  </>;
+}
+
+function History({ entries }) {
+  if (!entries.length) return <p className="esms-empty">Aucune partie pour cette sélection.</p>;
+  return <ul className="esms-history">{entries.map((entry) => <li key={entry.id}>
+    <div><h3>{entry.label || 'Activité terminée'}</h3><p>{domainName(entry.module)} · <time dateTime={entry.completedAt.toISOString()}>{dateLabel(entry.completedAt)}</time></p></div>
+    <span className={`esms-badge ${entry.source === 'demo' ? '' : 'esms-badge-recorded'}`}>{entry.source === 'demo' ? 'Exemple' : 'Partie enregistrée'}</span>
+  </li>)}</ul>;
+}
+
+function Activities({ child }) {
+  const [period, setPeriod] = useState('all');
+  const [domain, setDomain] = useState('all');
+  const [origin, setOrigin] = useState('all');
+  const [limit, setLimit] = useState(10);
+  const sourceHistory = child.history.filter((entry) => origin === 'all' || entry.source === origin);
+  const metrics = summarizeHistory(sourceHistory, period);
+  const entries = metrics.entries.filter((entry) => domain === 'all' || entry.module === domain);
+  const days = metrics.days.map((day) => ({ ...day, count: entries.filter((entry) =>
+    dayKey(entry.completedAt) === day.key
+  ).length }));
+  const max = Math.max(1, ...days.map((day) => day.count));
+  return <>
+    <section className="esms-panel" aria-labelledby="esms-activity-title">
+      <div className="esms-section-heading"><div><h2 id="esms-activity-title">Activités réalisées</h2><p className="esms-description">Retrouver une partie par période, domaine ou origine.</p></div><strong className="esms-badge">{entries.length} partie{entries.length > 1 ? 's' : ''}</strong></div>
+      <div className="esms-filters">
+        <label>Période<select value={period} onChange={(event) => { setPeriod(event.target.value); setLimit(10); }}><option value="all">Depuis le début</option><option value="week">Les 7 derniers jours</option></select></label>
+        <label>Domaine<select value={domain} onChange={(event) => { setDomain(event.target.value); setLimit(10); }}><option value="all">Tous les domaines</option>{DOMAINS.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <label>Origine<select value={origin} onChange={(event) => { setOrigin(event.target.value); setLimit(10); }}><option value="all">Toutes les parties</option><option value="recorded">Parties enregistrées</option><option value="demo">Exemples de démonstration</option></select></label>
+      </div>
+      <History entries={entries.slice(0, limit)} />
+      {entries.length > limit && <button type="button" className="esms-button esms-button-secondary" onClick={() => setLimit(limit + 10)}>Afficher les parties suivantes</button>}
+    </section>
+    <section className="esms-panel" aria-labelledby="esms-week-title">
+      <h2 id="esms-week-title">La pratique sur 7 jours</h2><p className="esms-description">Nombre de parties terminées selon les filtres choisis.</p>
+      {days.some((day) => day.count) ? <>
+        <div className="esms-chart" aria-hidden="true">{days.map((day) => <div key={day.key}><strong>{day.count}</strong><div className="esms-chart-track"><span style={{ height: `${day.count / max * 100}%` }} /></div><span>{new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric' }).format(day.date)}</span></div>)}</div>
+        <table className="esms-sr-only"><caption>Parties par jour</caption><thead><tr><th scope="col">Date</th><th scope="col">Parties</th></tr></thead><tbody>{days.map((day) => <tr key={day.key}><th scope="row">{dateLabel(day.date, false)}</th><td>{day.count}</td></tr>)}</tbody></table>
+      </> : <p className="esms-empty">Aucune partie ces 7 derniers jours pour cette sélection.</p>}
+    </section>
+  </>;
+}
+
+function Observations({ child, draft, onDraft }) {
+  const [initial] = useState(() => {
+    try { return { notes: readObservations(localStorage, child.id), error: '' }; }
+    catch { return { notes: [], error: 'Les observations conservées ne sont pas accessibles dans ce navigateur.' }; }
+  });
+  const [notes, setNotes] = useState(initial.notes);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState(initial.error);
+  const field = (name) => ({ value: draft[name], onChange: (event) => onDraft({ ...draft, [name]: event.target.value }) });
+  const submit = (event) => {
+    event.preventDefault();
+    if (initial.error) return;
+    let note;
+    try { note = createObservation(child.id, draft); }
+    catch (cause) { setError(cause.message); return; }
+    try {
+      setNotes(saveObservation(localStorage, child.id, notes, note));
+      onDraft({ ...EMPTY_DRAFT, author: draft.author });
+      setError(''); setMessage(`Observation enregistrée pour ${child.firstName}.`);
+    } catch { setError('Enregistrement impossible. Votre texte est conservé dans le formulaire ; copiez-le avant de quitter la page.'); }
+  };
+  return <>
+    <details className="esms-panel work-tool-section"><summary>Rappeler les objectifs de {child.firstName}</summary><Goals child={child} /></details>
+    <div className="esms-notes-columns">
+      <section className="esms-panel" aria-labelledby="esms-new-note">
+        <h2 id="esms-new-note">Nouvelle observation</h2><p className="esms-description">Décrire une situation observée, l’aide apportée et la suite envisagée.</p>
+        <form className="esms-note-form" onSubmit={submit}>
+          <label>Rédigé par <span aria-hidden="true">*</span><input required maxLength={80} autoComplete="name" {...field('author')} placeholder="Nom du professionnel" /></label>
+          <details className="work-disclosure"><summary>Préciser l’objectif et le contexte, facultatif</summary><label>Objectif concerné<select {...field('objectiveId')}><option value="">Observation générale</option>{child.objectives.map((goal) => <option key={goal.id} value={goal.id}>{goal.title}</option>)}</select></label>
+          <div className="esms-form-pair"><label>Contexte<select {...field('context')}>{['Séance éducative', 'Activité en classe', 'Vie quotidienne', 'Échange avec la famille'].map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Aide apportée<select {...field('help')}>{['Non précisée', 'Sans aide', 'Indice visuel', 'Rappel oral', 'Accompagnement d’un adulte', 'Plusieurs aides'].map((item) => <option key={item}>{item}</option>)}</select></label></div></details>
+          <label>Ce qui a été observé <span aria-hidden="true">*</span><textarea required maxLength={1200} rows={4} {...field('text')} placeholder="Décrire les faits et les conditions de l’activité…" /></label>
+          <details className="work-disclosure"><summary>Ajouter une prochaine étape, facultatif</summary><label>Prochaine étape<textarea maxLength={400} rows={2} {...field('nextStep')} placeholder="Ce que l’équipe souhaite proposer ensuite…" /></label></details>
+          {error && <p className="esms-error" role="alert">{error}</p>}
+          <p className="esms-save-status" role="status">{message}</p>
+          <button type="submit" className="esms-button esms-button-primary" disabled={Boolean(initial.error)}>Enregistrer l’observation</button>
+        </form>
+      </section>
+      <section className="esms-panel" aria-labelledby="esms-notes-title">
+        <div className="esms-section-heading"><h2 id="esms-notes-title">Journal d’observations</h2><span className="esms-badge">{notes.length}</span></div>
+        {!notes.length && <p className="esms-empty">Aucune observation ajoutée pour {child.firstName}. Le journal se remplit avec les notes de l’équipe.</p>}
+        <ol className="esms-observations">{notes.map((note) => <li key={note.id}>
+          <div className="esms-section-heading"><strong>{note.author}</strong><time dateTime={note.createdAt}>{dateLabel(note.createdAt)}</time></div>
+          <p className="esms-note-context">{note.context} · Aide : {note.help}</p>
+          {note.objectiveId && <p className="esms-linked-goal">Objectif : {child.objectives.find((goal) => goal.id === note.objectiveId)?.title || 'Objectif du dossier'}</p>}
+          <p className="esms-note-text">{note.text}</p>
+          {note.nextStep && <div className="esms-next-step"><h3>Prochaine étape</h3><p>{note.nextStep}</p></div>}
+        </li>)}</ol>
+      </section>
+    </div>
+  </>;
+}
+
+function Settings({ child, updateSettings }) {
+  const [status, setStatus] = useState('');
+  return <section className="esms-panel" aria-labelledby="esms-settings-title"><h2 id="esms-settings-title">Adapter les activités de {child.firstName}</h2>
+    <p className="esms-description">Adaptez les choix, les aides et la difficulté proposés à l’enfant. Ces réglages sont partagés avec l’espace Parent ; leur effet dépend du jeu, et certains jeux ne les utilisent pas tous.</p>
+    <div className="esms-settings-grid">{SETTINGS.map((setting) => <div key={setting.key}>
+      <label htmlFor={`esms-${setting.key}`}>{setting.label}</label>
+      <select id={`esms-${setting.key}`} value={String(child.settings[setting.key])} aria-describedby={`esms-${setting.key}-help`} onChange={(event) => {
+        const [value, label] = setting.options.find(([option]) => String(option) === event.target.value);
+        updateSettings(child.id, { [setting.key]: value }); setStatus(`${setting.label} : ${label}, pour ${child.firstName}.`);
+      }}>{setting.options.map(([value, label]) => <option key={String(value)} value={String(value)}>{label}</option>)}</select>
+      <p id={`esms-${setting.key}-help`}>{setting.help}</p>
+    </div>)}</div><p className="esms-save-status" role="status">{status}</p>
+  </section>;
+}
 
 export default function SpecialistDashboard() {
   const navigate = useNavigate();
-  const {
-    profiles,
-    selectedChildId,
-    switchChild,
-    activeChild,
-    updateSettings,
-    setCurrentRole,
-  } = useBublii();
+  const { profiles, activeChild, switchChild, updateSettings, setCurrentRole } = useBublii();
+  const { data: workspace, error: workspaceError } = useWorkspace();
+  const dossierChild = { ...activeChild, objectives: goalsFor(activeChild, workspace) };
+  const [view, setView] = useState('overview');
+  const [drafts, setDrafts] = useState({});
+  const metrics = summarizeHistory(activeChild.history);
+  const weekly = summarizeHistory(activeChild.history, 'week');
+  const discovered = Object.values(activeChild.moduleProgress).reduce((sum, item) => sum + item.completedCount, 0);
+  const total = Object.values(ACTIVITY_CATALOG).reduce((sum, items) => sum + items.length, 0);
+  const exit = () => { setCurrentRole(null); navigate('/'); };
 
-  const [activeTab, setActiveTab] = useState('objectives'); // 'objectives' | 'settings' | 'history' | 'synthesis'
-  const [toastMessage, setToastMessage] = useState(null);
+  return <div className="esms-dashboard">
+    <a className="esms-skip" href="#esms-main">Aller au dossier</a>
+    <header className="esms-header"><div className="esms-header-inner">
+      <button type="button" className="esms-brand" onClick={exit} aria-label="Boblii, choisir un espace"><span className="esms-brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>Boblii <span>Établissement</span></button>
+      <button type="button" className="esms-button esms-button-quiet" onClick={exit}>← Changer d’espace</button>
+    </div></header>
+    <main id="esms-main" className="esms-main">
+      <CalendarShortcut role="specialiste" compact />
+      <div className="esms-welcome"><div><p className="esms-eyebrow">ÉQUIPE ÉDUCATIVE</p><h1>Accompagner chaque parcours</h1><p>Les activités, les objectifs et les observations, réunis par enfant.</p></div><span className="esms-badge">Démonstration</span></div>
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+      {view !== 'institution' && <><section className="esms-selector esms-panel" aria-labelledby="esms-children-title">
+        <div><h2 id="esms-children-title">Enfants accompagnés <span>({profiles.length})</span></h2><p>Ouvrir un dossier individuel.</p></div>
+        <label htmlFor="esms-child-select">Choisir l’enfant<select id="esms-child-select" value={activeChild.id} onChange={(event) => switchChild(event.target.value)}>{profiles.map((child) => <option key={child.id} value={child.id}>{child.firstName} · {child.age ? `${child.age} ans` : '?ge non renseign?'}</option>)}</select></label>
+      </section>
 
-  const handleExitToRoles = () => {
-    setCurrentRole(null);
-    navigate('/');
-  };
+      <section className="esms-dossier" aria-labelledby="esms-dossier-title">
+        <div className="esms-identity"><span className="esms-avatar" style={{ background: activeChild.avatar.bg, color: activeChild.avatar.color }} aria-hidden="true">{activeChild.avatar.initial}</span><div><h2 id="esms-dossier-title">Dossier de {activeChild.firstName}</h2><p>{activeChild.age ? `${activeChild.age} ans` : '?ge non renseign?'} · {activeChild.tagline}</p></div></div>
+        <button type="button" className="esms-button esms-button-secondary" onClick={() => { setCurrentRole('enfant'); navigate('/enfant'); }}>Ouvrir ses activités ↗</button>
+      </section>
 
-  const currentSettings = activeChild.settings;
+      <p className="work-local">Espace de travail local · Les échanges et documents restent dans ce navigateur.</p>
+      {workspaceError && <p className="esms-error" role="alert">{workspaceError}</p>}
+      <Notifications child={activeChild} role="esms" />
+      </>}
+      {view === 'overview' && <div className="esms-stats">
+        <div><h3>Activités découvertes</h3><strong>{discovered}<span> / {total}</span></strong><p>Des jeux à faire et à refaire.</p></div>
+        <div><h3>Parties cette semaine</h3><strong>{weekly.total}</strong><p>Sur les 7 derniers jours.</p></div>
+        <div><h3>Dernière partie</h3><strong className="esms-stat-date">{metrics.entries.length ? dateLabel(metrics.entries[0].completedAt, false) : 'À découvrir'}</strong><p>{metrics.entries[0]?.label || 'Aucune partie enregistrée.'}</p></div>
+      </div>}
 
-  return (
-    <div className="min-h-screen bg-[#F4E8D8] text-[#2D3748] pb-16">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1e783a] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2">
-          <span>✓</span>
-          <span>{toastMessage}</span>
+      <nav className="esms-navigation" aria-label="Rubriques du dossier">{[
+        ['overview', 'Dossier enfant'], ['sessions', 'Séances'], ['institution', 'Établissement'],
+      ].map(([id, label]) => <button key={id} type="button" aria-pressed={id === 'overview' ? !['sessions', 'institution'].includes(view) : view === id} onClick={() => setView(id)}>{label}</button>)}</nav>
+
+      {!['sessions', 'institution'].includes(view) && <div className="esms-dossier-actions">
+        <div className="work-actions">
+          {view !== 'overview' && <button type="button" className="esms-button" onClick={() => setView('overview')}>← Retour au dossier</button>}
+          {view === 'overview' && <><button type="button" className="esms-button esms-button-primary" onClick={() => setView('observations')}>Noter une observation</button><button type="button" className="esms-button" onClick={() => setView('collaboration')}>Échanger avec la famille</button></>}
         </div>
-      )}
+        <label>Que souhaitez-vous faire ?<select value={['insights', 'reports', 'activities', 'settings', 'collaboration', 'observations'].includes(view) ? view : ''} onChange={(event) => event.target.value && setView(event.target.value)}><option value="">Choisir un outil…</option><option value="insights">Choisir des activités pour l’enfant</option><option value="reports">Créer un rapport PDF</option><option value="activities">Historique des jeux</option><option value="settings">Réglages des jeux</option><option value="collaboration">Échanger avec la famille et suivre les objectifs</option><option value="observations">Journal d’observations</option></select></label>
+      </div>}
 
-      {/* Specialist Header */}
-      <header className="bg-white border-b border-[#D1D5DB] sticky top-0 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleExitToRoles}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#6B7A8C] hover:text-[#2D3748] hover:bg-slate-100 transition-colors"
-            >
-              ← Rôles
-            </button>
-            <div className="h-4 w-px bg-slate-300" />
-            <div className="flex items-center gap-2">
-              <span className="text-xl">📋</span>
-              <div>
-                <h1 className="font-['Fredoka'] text-lg font-bold text-[#2D3748] leading-tight">
-                  Espace Spécialiste & ESMS
-                </h1>
-                <p className="text-[11px] text-[#6B7A8C] hidden sm:block">
-                  Suivi pluridisciplinaire, objectifs individualisés et adaptation pédagogique
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="esms-view" key={`${activeChild.id}-${view}`}>
+        {view === 'overview' && <Overview child={dossierChild} metrics={metrics} onNotes={() => setView('observations')} />}
+        {view === 'observations' && <Observations child={dossierChild} draft={drafts[activeChild.id] || EMPTY_DRAFT} onDraft={(draft) => setDrafts((previous) => ({ ...previous, [activeChild.id]: draft }))} />}
+        {view === 'activities' && <Activities child={activeChild} />}
+        {view === 'settings' && <Settings child={activeChild} updateSettings={updateSettings} />}
+        {view === 'insights' && <Insights child={activeChild} />}
+        {view === 'sessions' && <Sessions child={activeChild} profiles={profiles} />}
+        {view === 'reports' && <Reports child={activeChild} />}
+        {view === 'collaboration' && <ProfessionalCollaboration child={activeChild} />}
+        {view === 'institution' && <Institution profiles={profiles} onOpenChild={(id) => { switchChild(id); setView('sessions'); }} />}
+      </div>
 
-          <div className="dashboard-header-actions">
-            <CalendarShortcut role="specialiste" compact />
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentRole('enfant');
-                navigate('/enfant');
-              }}
-              className="px-3.5 py-2 rounded-xl bg-[#2A6FB5] text-white text-xs font-bold hover:bg-[#1e5a96] transition-colors shadow-xs"
-            >
-              Aperçu élève ({activeChild.firstName}) →
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Workspace */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* Child Roster Navigation */}
-        <section className="bg-white rounded-2xl p-4 border border-[#D1D5DB] shadow-xs">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#6B7A8C]">
-              File active des profils suivis ({profiles.length}) :
-            </span>
-            <span className="text-xs text-[#6B7A8C]">
-              Sélectionnez un profil pour consulter sa grille d'évaluation
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {profiles.map((p) => {
-              const isSelected = p.id === selectedChildId;
-              const totalStars = Object.values(p.moduleProgress).reduce((acc, curr) => acc + curr.stars, 0);
-
-              return (
-                <div
-                  key={p.id}
-                  onClick={() => switchChild(p.id)}
-                  className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                    isSelected
-                      ? 'border-[#2A6FB5] bg-[#EBF4FF]/40 shadow-xs'
-                      : 'border-slate-200 hover:border-slate-300 bg-slate-50/70'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-extrabold text-sm shadow-xs"
-                      style={{ background: p.avatar.color }}
-                    >
-                      {p.avatar.initial}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-[#2D3748]">
-                        {p.firstName}
-                      </p>
-                      <span className="text-[11px] text-[#6B7A8C]">
-                        {p.age ? `${p.age} ans` : 'Âge non renseigné'} • {p.tagline}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-[#2A6FB5] block">
-                      {totalStars} ⭐
-                    </span>
-                    <span className="text-[10px] bg-slate-200/80 text-[#2D3748] px-2 py-0.5 rounded-md font-semibold">
-                      {p.settings.independence}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Active Child Overview Card */}
-        <section className="bg-white rounded-3xl p-6 border border-[#D1D5DB] shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="font-['Fredoka'] text-2xl font-bold text-[#2D3748]">
-                  Dossier éducatif : {activeChild.firstName}
-                </h2>
-                <span className="bg-[#2A6FB5]/10 text-[#2A6FB5] text-xs font-bold px-3 py-1 rounded-full">
-                  Niveau {activeChild.settings.difficulty} / 5
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-[#6B7A8C] mt-1">
-                Profil Trisomie 21 • Modalité d'accompagnement : <strong>{activeChild.settings.independence}</strong> • {activeChild.settings.answerChoices} choix de réponses
-              </p>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl text-xs font-bold">
-              {[
-                { id: 'objectives', label: 'Objectifs ciblés' },
-                { id: 'settings', label: 'Paramétrage fin' },
-                { id: 'history', label: 'Historique de session' },
-                { id: 'synthesis', label: 'Synthèse pluridisciplinaire' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-xl transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-white text-[#2D3748] shadow-xs'
-                      : 'text-[#6B7A8C] hover:text-[#2D3748]'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Tab 1: Objectives & Clinical Domains */}
-          {activeTab === 'objectives' && (
-            <div className="pt-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {activeChild.objectives.map((obj) => (
-                  <div key={obj.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="font-bold uppercase tracking-wider text-[#2A6FB5]">
-                        {obj.module}
-                      </span>
-                      <span className="font-extrabold text-[#2D3748]">
-                        {obj.progress}%
-                      </span>
-                    </div>
-                    <p className="font-bold text-xs text-[#2D3748] mb-3 leading-snug">
-                      {obj.title}
-                    </p>
-                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#2A6FB5]"
-                        style={{ width: `${obj.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Competency by module */}
-              <div className="mt-6">
-                <h4 className="font-bold text-sm text-[#2D3748] mb-3">
-                  Synthèse des compétences validées dans la session
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { id: 'learn', label: 'APPRENDRE', color: '#2A6FB5', note: 'Appariement & Dénombrement' },
-                    { id: 'communicate', label: 'COMMUNIQUER', color: '#E84545', note: 'Discrimination des émotions' },
-                    { id: 'move', label: 'BOUGER (Caméra)', color: '#22a06b', note: 'Coordination & Imitation motrice' },
-                    { id: 'grow', label: 'GRANDIR', color: '#F5A623', note: 'Séquençage chronologique' },
-                  ].map((m) => {
-                    const prog = activeChild.moduleProgress[m.id] || { completedCount: 0, totalActivities: 4, stars: 0 };
-                    return (
-                      <div key={m.id} className="p-4 rounded-2xl border border-slate-200 bg-white shadow-xs">
-                        <span className="text-xs font-bold" style={{ color: m.color }}>
-                          {m.label}
-                        </span>
-                        <p className="text-xs text-[#6B7A8C] mt-0.5 mb-2">{m.note}</p>
-                        <div className="flex items-baseline justify-between text-xs">
-                          <span className="font-bold text-[#2D3748]">
-                            {prog.completedCount} / {prog.totalActivities} validés
-                          </span>
-                          <span className="font-bold text-amber-500">
-                            {prog.stars} ⭐
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 2: Fine-grained clinical settings */}
-          {activeTab === 'settings' && (
-            <div className="pt-6 space-y-6">
-              <p className="text-xs text-[#6B7A8C]">
-                Ajustez les paramètres techniques appliqués aux activités de {activeChild.firstName}. Ces options s'accordent avec le PPA (Projet Personnalisé d'Accompagnement).
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                  <label className="block text-xs font-bold text-[#2D3748] mb-1">
-                    Charge cognitive (Choix de réponses)
-                  </label>
-                  <p className="text-[11px] text-[#6B7A8C] mb-3">
-                    Nombre d'items concurrents proposés à l'écran.
-                  </p>
-                  <div className="flex gap-2">
-                    {[2, 3, 4].map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => {
-                          updateSettings(activeChild.id, { answerChoices: n });
-                          showToast(`Choix réglés sur ${n}`);
-                        }}
-                        className={`flex-1 min-h-[44px] py-2 rounded-xl text-xs font-bold transition-all ${
-                          currentSettings.answerChoices === n
-                            ? 'bg-[#2A6FB5] text-white'
-                            : 'bg-white border border-slate-200 text-[#2D3748]'
-                        }`}
-                      >
-                        {n} choix
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                  <label className="block text-xs font-bold text-[#2D3748] mb-1">
-                    Double encodage (Synthèse vocale)
-                  </label>
-                  <p className="text-[11px] text-[#6B7A8C] mb-3">
-                    Lecture systématique des consignes et retours sonores.
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        updateSettings(activeChild.id, { audio: true });
-                        showToast('Audio activé');
-                      }}
-                      className={`flex-1 min-h-[44px] py-2 rounded-xl text-xs font-bold transition-all ${
-                        currentSettings.audio
-                          ? 'bg-[#2A6FB5] text-white'
-                          : 'bg-white border border-slate-200 text-[#2D3748]'
-                      }`}
-                    >
-                      Oui (Soutenu)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        updateSettings(activeChild.id, { audio: false });
-                        showToast('Audio coupé');
-                      }}
-                      className={`flex-1 min-h-[44px] py-2 rounded-xl text-xs font-bold transition-all ${
-                        !currentSettings.audio
-                          ? 'bg-[#2A6FB5] text-white'
-                          : 'bg-white border border-slate-200 text-[#2D3748]'
-                      }`}
-                    >
-                      Non (Autonome)
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                  <label className="block text-xs font-bold text-[#2D3748] mb-1">
-                    Niveau d'étayage (Indices)
-                  </label>
-                  <p className="text-[11px] text-[#6B7A8C] mb-3">
-                    Nombre d'aides graduées fournies avant résolution.
-                  </p>
-                  <div className="flex gap-2">
-                    {[1, 2, 3].map((h) => (
-                      <button
-                        key={h}
-                        type="button"
-                        onClick={() => {
-                          updateSettings(activeChild.id, { hints: h });
-                          showToast(`${h} indice(s) maximum`);
-                        }}
-                        className={`flex-1 min-h-[44px] py-2 rounded-xl text-xs font-bold transition-all ${
-                          currentSettings.hints === h
-                            ? 'bg-[#F5A623] text-white'
-                            : 'bg-white border border-slate-200 text-[#2D3748]'
-                        }`}
-                      >
-                        {h} max
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 3: Detailed History */}
-          {activeTab === 'history' && (
-            <div className="pt-6">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-[#6B7A8C]">
-                      <th className="py-2.5 font-bold">Activité</th>
-                      <th className="py-2.5 font-bold">Module</th>
-                      <th className="py-2.5 font-bold">Date & Heure</th>
-                      <th className="py-2.5 font-bold text-right">Résultat</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {activeChild.history.map((h) => (
-                      <tr key={h.id} className="hover:bg-slate-50">
-                        <td className="py-3 font-semibold text-[#2D3748]">{h.label}</td>
-                        <td className="py-3 uppercase text-[10px] font-bold text-[#2A6FB5]">{h.module}</td>
-                        <td className="py-3 text-[#6B7A8C]">{h.date}</td>
-                        <td className="py-3 text-right font-bold text-amber-500">
-                          {h.score} / {h.maxScore} ⭐
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 4: Synthesis & Printable Note */}
-          {activeTab === 'synthesis' && (
-            <div className="pt-6 space-y-4">
-              <div className="p-5 rounded-2xl bg-[#EBF4FF]/30 border border-[#2A6FB5]/30">
-                <h4 className="font-bold text-sm text-[#2A6FB5] mb-2">
-                  Synthèse d'observation pour l'équipe éducative & thérapeutique
-                </h4>
-                <p className="text-xs text-[#2D3748] leading-relaxed mb-3">
-                  L'élève <strong>{activeChild.firstName}</strong> {activeChild.age ? `(${activeChild.age} ans)` : ''} présente un engagement positif dans les activités à fort étayage visuel. La limitation à <strong>{activeChild.settings.answerChoices} choix</strong> et le maintien de la synthèse vocale facilitent son entrée dans la tâche sans découragement.
-                </p>
-                <div className="text-xs font-semibold text-[#6B7A8C] flex flex-wrap gap-4 pt-2 border-t border-[#2A6FB5]/20">
-                  <span>Recommandation motrice : Poursuivre le travail de posture avec la caméra</span>
-                  <span>Autonomie : Favoriser l'enchaînement de la routine du brossage</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-      </main>
-    </div>
-  );
+      <details className="esms-method"><summary>À propos de ce suivi</summary>
+        <p>Les profils et objectifs initiaux sont des exemples de démonstration ; l’équipe peut ajouter ses propres objectifs. Les parties fictives sont marquées « Exemple » ; les nouvelles parties s’y ajoutent. Les activités terminées ne constituent pas une évaluation des compétences ou du développement.</p>
+        <p>Les observations sont saisies par l’équipe et conservées uniquement dans ce navigateur, séparément des résultats des jeux. Il n’y a pas encore de partage entre professionnels ou appareils. Les brouillons restent disponibles en changeant de rubrique ou d’enfant, jusqu’à l’actualisation de la page.</p>
+        <p>La présentation s’appuie sur les principes d’accompagnement individuel et de coopération avec les familles : <a href="https://www.has-sante.fr/jcms/p_3287349/" target="_blank" rel="noreferrer">HAS — Accompagner la scolarité</a> et <a href="https://ds-int.org/recommendations-for-the-education-of-learners-with-down-syndrome/" target="_blank" rel="noreferrer">Down Syndrome International — recommandations pour l’éducation</a>.</p>
+      </details>
+      <footer className="esms-footer">Boblii · Observer, adapter, accompagner.</footer>
+    </main>
+  </div>;
 }

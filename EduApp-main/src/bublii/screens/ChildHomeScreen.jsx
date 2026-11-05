@@ -165,7 +165,7 @@ export default function ChildHomeScreen() {
 
       {/* ── 4 MODULE CARDS ── */}
       <main className="child-home-layout max-w-7xl mx-auto px-4 sm:px-8 pt-8">
-        <aside className="child-home-sidebar" aria-label="Ma journée"><CalendarShortcut /><DayExample compact /></aside>
+        <aside className="child-home-sidebar" aria-label="Ma journée"><CalendarShortcut /><button type="button" onClick={() => navigate('/enfant/routines')} className="my-4 w-full rounded-2xl border-2 border-indigo-300 bg-white p-4 font-bold text-indigo-900">Mes petites ?tapes</button><DayExample compact /></aside>
         <section className="child-home-modules" aria-label="Mes activités">
 
         {/* Instruction label */}
