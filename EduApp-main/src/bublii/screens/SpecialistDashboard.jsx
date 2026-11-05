@@ -5,6 +5,14 @@ import { ACTIVITY_CATALOG } from '../data/progress';
 import { summarizeHistory, dayKey } from '../parent/parentMetrics';
 import { createObservation, readObservations, saveObservation } from '../esms/observations';
 import './SpecialistDashboard.css';
+import { useWorkspace } from '../premium/WorkspaceContext';
+import { goalsFor } from '../premium/model';
+import Insights from '../premium/Insights';
+import Sessions from '../premium/SessionsHome';
+import Reports from '../premium/Reports';
+import Institution from '../premium/Institution';
+import { ProfessionalCollaboration } from '../premium/Collaboration';
+import { Notifications } from '../premium/SharedUI';
 
 const DOMAINS = [
   { id: 'learn', name: 'Apprendre', detail: 'Mots, nombres et logique', color: '#2458bd', soft: '#e1ebff' },
@@ -58,7 +66,7 @@ function Overview({ child, metrics, onNotes }) {
         <p className="esms-muted">Repères du profil de démonstration.</p>
       </section>
       <section className="esms-panel" aria-labelledby="esms-goals-overview">
-        <div className="esms-section-heading"><h2 id="esms-goals-overview">Ses objectifs d’accompagnement</h2><span className="esms-badge">Exemples</span></div>
+        <div className="esms-section-heading"><h2 id="esms-goals-overview">Ses objectifs d’accompagnement</h2><span className="esms-badge">Objectifs du dossier</span></div>
         <Goals child={child} />
         <button type="button" className="esms-button esms-button-secondary" onClick={onNotes}>Noter une observation →</button>
       </section>
@@ -133,17 +141,17 @@ function Observations({ child, draft, onDraft }) {
     } catch { setError('Enregistrement impossible. Votre texte est conservé dans le formulaire ; copiez-le avant de quitter la page.'); }
   };
   return <>
-    <section className="esms-panel" aria-labelledby="esms-objectives-title"><div className="esms-section-heading"><div><h2 id="esms-objectives-title">Objectifs d’accompagnement</h2><p className="esms-description">Des repères pour préparer la prochaine séance avec {child.firstName}.</p></div><span className="esms-badge">Exemples du profil</span></div><Goals child={child} /></section>
+    <details className="esms-panel work-tool-section"><summary>Rappeler les objectifs de {child.firstName}</summary><Goals child={child} /></details>
     <div className="esms-notes-columns">
       <section className="esms-panel" aria-labelledby="esms-new-note">
         <h2 id="esms-new-note">Nouvelle observation</h2><p className="esms-description">Décrire une situation observée, l’aide apportée et la suite envisagée.</p>
         <form className="esms-note-form" onSubmit={submit}>
           <label>Rédigé par <span aria-hidden="true">*</span><input required maxLength={80} autoComplete="name" {...field('author')} placeholder="Nom du professionnel" /></label>
-          <label>Objectif concerné<select {...field('objectiveId')}><option value="">Observation générale</option>{child.objectives.map((goal) => <option key={goal.id} value={goal.id}>{goal.title}</option>)}</select></label>
+          <details className="work-disclosure"><summary>Préciser l’objectif et le contexte, facultatif</summary><label>Objectif concerné<select {...field('objectiveId')}><option value="">Observation générale</option>{child.objectives.map((goal) => <option key={goal.id} value={goal.id}>{goal.title}</option>)}</select></label>
           <div className="esms-form-pair"><label>Contexte<select {...field('context')}>{['Séance éducative', 'Activité en classe', 'Vie quotidienne', 'Échange avec la famille'].map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Aide apportée<select {...field('help')}>{['Non précisée', 'Sans aide', 'Indice visuel', 'Rappel oral', 'Accompagnement d’un adulte', 'Plusieurs aides'].map((item) => <option key={item}>{item}</option>)}</select></label></div>
+            <label>Aide apportée<select {...field('help')}>{['Non précisée', 'Sans aide', 'Indice visuel', 'Rappel oral', 'Accompagnement d’un adulte', 'Plusieurs aides'].map((item) => <option key={item}>{item}</option>)}</select></label></div></details>
           <label>Ce qui a été observé <span aria-hidden="true">*</span><textarea required maxLength={1200} rows={4} {...field('text')} placeholder="Décrire les faits et les conditions de l’activité…" /></label>
-          <label>Prochaine étape <span className="esms-optional">facultatif</span><textarea maxLength={400} rows={2} {...field('nextStep')} placeholder="Ce que l’équipe souhaite proposer ensuite…" /></label>
+          <details className="work-disclosure"><summary>Ajouter une prochaine étape, facultatif</summary><label>Prochaine étape<textarea maxLength={400} rows={2} {...field('nextStep')} placeholder="Ce que l’équipe souhaite proposer ensuite…" /></label></details>
           {error && <p className="esms-error" role="alert">{error}</p>}
           <p className="esms-save-status" role="status">{message}</p>
           <button type="submit" className="esms-button esms-button-primary" disabled={Boolean(initial.error)}>Enregistrer l’observation</button>
@@ -167,7 +175,7 @@ function Observations({ child, draft, onDraft }) {
 function Settings({ child, updateSettings }) {
   const [status, setStatus] = useState('');
   return <section className="esms-panel" aria-labelledby="esms-settings-title"><h2 id="esms-settings-title">Adapter les activités de {child.firstName}</h2>
-    <p className="esms-description">Ces réglages sont communs avec l’espace Parent et s’appliquent dans les jeux compatibles.</p>
+    <p className="esms-description">Adaptez les choix, les aides et la difficulté proposés à l’enfant. Ces réglages sont partagés avec l’espace Parent ; leur effet dépend du jeu, et certains jeux ne les utilisent pas tous.</p>
     <div className="esms-settings-grid">{SETTINGS.map((setting) => <div key={setting.key}>
       <label htmlFor={`esms-${setting.key}`}>{setting.label}</label>
       <select id={`esms-${setting.key}`} value={String(child.settings[setting.key])} aria-describedby={`esms-${setting.key}-help`} onChange={(event) => {
@@ -182,6 +190,8 @@ function Settings({ child, updateSettings }) {
 export default function SpecialistDashboard() {
   const navigate = useNavigate();
   const { profiles, activeChild, switchChild, updateSettings, setCurrentRole } = useBublii();
+  const { data: workspace, error: workspaceError } = useWorkspace();
+  const dossierChild = { ...activeChild, objectives: goalsFor(activeChild, workspace) };
   const [view, setView] = useState('overview');
   const [drafts, setDrafts] = useState({});
   const metrics = summarizeHistory(activeChild.history);
@@ -199,7 +209,7 @@ export default function SpecialistDashboard() {
     <main id="esms-main" className="esms-main">
       <div className="esms-welcome"><div><p className="esms-eyebrow">ÉQUIPE ÉDUCATIVE</p><h1>Accompagner chaque parcours</h1><p>Les activités, les objectifs et les observations, réunis par enfant.</p></div><span className="esms-badge">Démonstration</span></div>
 
-      <section className="esms-selector esms-panel" aria-labelledby="esms-children-title">
+      {view !== 'institution' && <><section className="esms-selector esms-panel" aria-labelledby="esms-children-title">
         <div><h2 id="esms-children-title">Enfants accompagnés <span>({profiles.length})</span></h2><p>Ouvrir un dossier individuel.</p></div>
         <label htmlFor="esms-child-select">Choisir l’enfant<select id="esms-child-select" value={activeChild.id} onChange={(event) => switchChild(event.target.value)}>{profiles.map((child) => <option key={child.id} value={child.id}>{child.firstName} · {child.age} ans</option>)}</select></label>
       </section>
@@ -209,25 +219,42 @@ export default function SpecialistDashboard() {
         <button type="button" className="esms-button esms-button-secondary" onClick={() => { setCurrentRole('enfant'); navigate('/enfant'); }}>Ouvrir ses activités ↗</button>
       </section>
 
-      <div className="esms-stats">
+      <p className="work-local">Espace de travail local · Les échanges et documents restent dans ce navigateur.</p>
+      {workspaceError && <p className="esms-error" role="alert">{workspaceError}</p>}
+      <Notifications child={activeChild} role="esms" />
+      </>}
+      {view === 'overview' && <div className="esms-stats">
         <div><h3>Activités découvertes</h3><strong>{discovered}<span> / {total}</span></strong><p>Des jeux à faire et à refaire.</p></div>
         <div><h3>Parties cette semaine</h3><strong>{weekly.total}</strong><p>Sur les 7 derniers jours.</p></div>
         <div><h3>Dernière partie</h3><strong className="esms-stat-date">{metrics.entries.length ? dateLabel(metrics.entries[0].completedAt, false) : 'À découvrir'}</strong><p>{metrics.entries[0]?.label || 'Aucune partie enregistrée.'}</p></div>
-      </div>
+      </div>}
 
       <nav className="esms-navigation" aria-label="Rubriques du dossier">{[
-        ['overview', 'Vue d’ensemble'], ['observations', 'Objectifs & observations'], ['activities', 'Activités'], ['settings', 'Réglages'],
-      ].map(([id, label]) => <button key={id} type="button" aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</nav>
+        ['overview', 'Dossier enfant'], ['sessions', 'Séances'], ['institution', 'Établissement'],
+      ].map(([id, label]) => <button key={id} type="button" aria-pressed={id === 'overview' ? !['sessions', 'institution'].includes(view) : view === id} onClick={() => setView(id)}>{label}</button>)}</nav>
+
+      {!['sessions', 'institution'].includes(view) && <div className="esms-dossier-actions">
+        <div className="work-actions">
+          {view !== 'overview' && <button type="button" className="esms-button" onClick={() => setView('overview')}>← Retour au dossier</button>}
+          {view === 'overview' && <><button type="button" className="esms-button esms-button-primary" onClick={() => setView('observations')}>Noter une observation</button><button type="button" className="esms-button" onClick={() => setView('collaboration')}>Échanger avec la famille</button></>}
+        </div>
+        <label>Que souhaitez-vous faire ?<select value={['insights', 'reports', 'activities', 'settings', 'collaboration', 'observations'].includes(view) ? view : ''} onChange={(event) => event.target.value && setView(event.target.value)}><option value="">Choisir un outil…</option><option value="insights">Choisir des activités pour l’enfant</option><option value="reports">Créer un rapport PDF</option><option value="activities">Historique des jeux</option><option value="settings">Réglages des jeux</option><option value="collaboration">Échanger avec la famille et suivre les objectifs</option><option value="observations">Journal d’observations</option></select></label>
+      </div>}
 
       <div className="esms-view" key={`${activeChild.id}-${view}`}>
-        {view === 'overview' && <Overview child={activeChild} metrics={metrics} onNotes={() => setView('observations')} />}
-        {view === 'observations' && <Observations child={activeChild} draft={drafts[activeChild.id] || EMPTY_DRAFT} onDraft={(draft) => setDrafts((previous) => ({ ...previous, [activeChild.id]: draft }))} />}
+        {view === 'overview' && <Overview child={dossierChild} metrics={metrics} onNotes={() => setView('observations')} />}
+        {view === 'observations' && <Observations child={dossierChild} draft={drafts[activeChild.id] || EMPTY_DRAFT} onDraft={(draft) => setDrafts((previous) => ({ ...previous, [activeChild.id]: draft }))} />}
         {view === 'activities' && <Activities child={activeChild} />}
         {view === 'settings' && <Settings child={activeChild} updateSettings={updateSettings} />}
+        {view === 'insights' && <Insights child={activeChild} />}
+        {view === 'sessions' && <Sessions child={activeChild} profiles={profiles} />}
+        {view === 'reports' && <Reports child={activeChild} />}
+        {view === 'collaboration' && <ProfessionalCollaboration child={activeChild} />}
+        {view === 'institution' && <Institution profiles={profiles} onOpenChild={(id) => { switchChild(id); setView('sessions'); }} />}
       </div>
 
       <details className="esms-method"><summary>À propos de ce suivi</summary>
-        <p>Les profils et objectifs sont des exemples de démonstration. Les parties fictives sont marquées « Exemple » ; les nouvelles parties s’y ajoutent. Les activités terminées ne constituent pas une évaluation des compétences ou du développement.</p>
+        <p>Les profils et objectifs initiaux sont des exemples de démonstration ; l’équipe peut ajouter ses propres objectifs. Les parties fictives sont marquées « Exemple » ; les nouvelles parties s’y ajoutent. Les activités terminées ne constituent pas une évaluation des compétences ou du développement.</p>
         <p>Les observations sont saisies par l’équipe et conservées uniquement dans ce navigateur, séparément des résultats des jeux. Il n’y a pas encore de partage entre professionnels ou appareils. Les brouillons restent disponibles en changeant de rubrique ou d’enfant, jusqu’à l’actualisation de la page.</p>
         <p>La présentation s’appuie sur les principes d’accompagnement individuel et de coopération avec les familles : <a href="https://www.has-sante.fr/jcms/p_3287349/" target="_blank" rel="noreferrer">HAS — Accompagner la scolarité</a> et <a href="https://ds-int.org/recommendations-for-the-education-of-learners-with-down-syndrome/" target="_blank" rel="noreferrer">Down Syndrome International — recommandations pour l’éducation</a>.</p>
       </details>

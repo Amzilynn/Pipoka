@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useBublii } from '../context/BubliiContext';
 import { summarizeHistory } from '../parent/parentMetrics';
 import './ParentDashboard.css';
+import { ParentCollaboration } from '../premium/Collaboration';
+import { RoutineManager } from '../premium/Routines.jsx';
 
 const DOMAINS = [
   { id: 'learn', name: 'Apprendre', detail: 'Mots, nombres et logique', icon: '📚', color: '#2A6FB5' },
@@ -134,6 +136,9 @@ export default function ParentDashboard() {
           <ul className="parent-goals">{(activeChild.objectives || []).map((goal, index) => <li key={goal.id}><span className="parent-goal-number" aria-hidden="true">{index + 1}</span><div><h3>{goal.title}</h3><p>{DOMAINS.find((domain) => domain.id === goal.module)?.name || 'Objectif individuel'}</p></div></li>)}</ul>
           {!activeChild.objectives?.length && <p className="parent-no-data">Aucun objectif renseigné pour cet enfant.</p>}
         </section>
+
+        <RoutineManager key={`routines-${activeChild.id}`} child={activeChild} author="parent" />
+        <ParentCollaboration key={`family-${activeChild.id}`} child={activeChild} />
 
         <details className="parent-panel parent-settings" key={activeChild.id}>
           <summary>Adapter les activités de {activeChild.firstName}<span>Choix, audio et aides</span></summary>

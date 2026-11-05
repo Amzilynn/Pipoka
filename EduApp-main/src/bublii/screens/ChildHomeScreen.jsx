@@ -125,6 +125,7 @@ export default function ChildHomeScreen() {
 
       {/* Main 4 Cards Stage (Simplified, Visual, Zero text clutter) */}
       <main className="max-w-6xl mx-auto px-4 sm:px-8 pt-8">
+        <button type="button" onClick={() => navigate('/enfant/routines')} className="mb-8 w-full rounded-3xl border-4 border-indigo-300 bg-white p-6 text-2xl font-bold text-indigo-900 shadow-md">📅 Mon calendrier · Mes petites étapes</button>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {MODULE_DEFINITIONS.map((mod, idx) => {
             const progress = activeChild.moduleProgress[mod.id] || { stars: 0 };
